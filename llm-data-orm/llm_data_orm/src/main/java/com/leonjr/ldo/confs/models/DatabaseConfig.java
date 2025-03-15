@@ -1,6 +1,6 @@
 package com.leonjr.ldo.confs.models;
 
-import com.leonjr.ldo.enums.DatabaseType;
+import com.leonjr.ldo.confs.enums.DatabaseType;
 
 import lombok.Data;
 import lombok.ToString;

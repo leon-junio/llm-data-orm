@@ -1,4 +1,4 @@
-package com.leonjr.ldo.enums;
+package com.leonjr.ldo.confs.enums;
 
 public enum DatabaseType {
     POSTGRES("org.postgresql.Driver"),
