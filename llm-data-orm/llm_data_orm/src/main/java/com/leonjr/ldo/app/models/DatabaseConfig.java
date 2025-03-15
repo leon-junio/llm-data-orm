@@ -27,4 +27,8 @@ public class DatabaseConfig {
     private DatabaseType databaseType;
     @Null(message = "The schema is not required for MySQL")
     private String schema;
+
+    public String getJdbcUrl() {
+        return String.format("jdbc:%s://%s:%d/%s", databaseType.toString().toLowerCase(), host, port, databaseName);
+    }
 }

@@ -18,4 +18,8 @@ public class AppStore {
         return instance;
     }
 
+    public static AppStore getInstance() {
+        return instance;
+    }
+
 }
