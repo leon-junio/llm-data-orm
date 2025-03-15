@@ -5,10 +5,12 @@ import java.util.Calendar;
 import com.leonjr.ldo.app.consts.AppConsts;
 import com.leonjr.ldo.app.helper.LoggerHelper;
 import com.leonjr.ldo.app.helper.YmlHelper;
+import com.leonjr.ldo.database.handler.DBHelper;
 
 public class Main {
     public static void main(String[] args) {
         boot();
+        test();
     }
 
     public static void boot() {
@@ -18,6 +20,15 @@ public class Main {
         var startupConf = YmlHelper.getStartupConfiguration();
         LoggerHelper.logger.info("Configuration loaded successfully!");
         LoggerHelper.logger.info(startupConf);
-        var appStore = AppStore.getInstance(startupConf);
+        AppStore.getInstance(startupConf);
+        DBHelper.startDB(startupConf.getDatabase());
+    }
+
+    public static void test() {
+        LoggerHelper.logger.info("Testing...");
+        var tableDescription = DBHelper
+                .getTableDescription(AppStore.getInstance().getStartupConfiguration().getApp().getTargetTableName());
+        LoggerHelper.logger.info(tableDescription);
+        DBHelper.shutdown();
     }
 }
