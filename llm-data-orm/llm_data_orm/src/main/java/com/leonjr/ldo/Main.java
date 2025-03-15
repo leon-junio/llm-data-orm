@@ -1,6 +1,7 @@
 package com.leonjr.ldo;
 
 import java.util.Calendar;
+import java.util.logging.Logger;
 
 import com.leonjr.ldo.app.consts.AppConsts;
 import com.leonjr.ldo.app.helper.LoggerHelper;
@@ -29,6 +30,9 @@ public class Main {
         var tableDescription = DBHelper
                 .getTableDescription(AppStore.getInstance().getStartupConfiguration().getApp().getTargetTableName());
         LoggerHelper.logger.info(tableDescription);
+        LoggerHelper.logger.info("Table description in JSON format:");
+        LoggerHelper.logger.info(tableDescription.toJson());
+        LoggerHelper.logger.info("Test completed!");
         DBHelper.shutdown();
     }
 }

@@ -2,6 +2,8 @@ package com.leonjr.ldo.database.models;
 
 import java.util.List;
 
+import com.google.gson.Gson;
+
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
@@ -22,6 +24,16 @@ public class TableDescription {
             columns.forEach(column -> sb.append(column.toString()).append("\n"));
         }
         return sb.toString();
+    }
+
+    /**
+     * Convert the object to JSON string
+     * 
+     * @return JSON string representation of the object
+     */
+    public String toJson() {
+        Gson gson = new Gson();
+        return gson.toJson(this);
     }
 
 }
