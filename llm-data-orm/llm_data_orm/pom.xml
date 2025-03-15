@@ -146,6 +146,13 @@
             <scope>compile</scope>
         </dependency>
 
+        <!-- Picocli params reader -->
+        <dependency>
+            <groupId>info.picocli</groupId>
+            <artifactId>picocli</artifactId>
+            <version>4.7.6</version>
+        </dependency>
+
     </dependencies>
 
 
