@@ -9,6 +9,10 @@ import jakarta.validation.Validator;
 import jakarta.validation.ValidatorFactory;
 
 import org.yaml.snakeyaml.Yaml;
+
+import java.io.BufferedInputStream;
+import java.io.FileInputStream;
+import java.io.IOException;
 import java.io.InputStream;
 import java.util.Set;
 
@@ -17,18 +21,34 @@ public class YmlHelper {
     /**
      * Get YAML configuration file and parse it to StartupConfiguration object
      * 
+     * @param lodConfigPath Path to the configuration file
+     * 
      * @return StartupConfiguration object with parsed configuration
      * @throws RuntimeException if configuration file is not found or invalid
+     * @throws IOException      if an I/O error occurs while reading the file
      */
-    public static StartupConfiguration getStartupConfiguration() throws RuntimeException {
+    public static StartupConfiguration getStartupConfiguration(String lodConfigPath)
+            throws RuntimeException, IOException {
         Yaml yaml = new Yaml();
-        InputStream inputStream = Main.class.getClassLoader().getResourceAsStream("app_config.yml");
+        StartupConfiguration config = null;
 
-        if (inputStream == null) {
-            throw new RuntimeException("app_config.yml not found!");
+        if (lodConfigPath == null) {
+
+            LoggerHelper.logger.warn("Configuration file not provided, using default test configuration...");
+
+            try (InputStream inputStream = Main.class.getClassLoader().getResourceAsStream("lod_config.example.yml")) {
+
+                if (inputStream == null) {
+                    throw new RuntimeException("lod_config.example.yml not found!");
+                }
+
+                config = yaml.loadAs(inputStream, StartupConfiguration.class);
+            }
+        } else {
+            try (var buffStream = new BufferedInputStream(new FileInputStream(lodConfigPath))) {
+                config = yaml.loadAs(buffStream, StartupConfiguration.class);
+            }
         }
-
-        StartupConfiguration config = yaml.loadAs(inputStream, StartupConfiguration.class);
 
         if (config == null) {
             throw new RuntimeException("Invalid configuration file format!");

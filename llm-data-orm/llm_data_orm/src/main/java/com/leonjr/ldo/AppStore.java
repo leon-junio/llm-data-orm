@@ -10,16 +10,21 @@ import lombok.Getter;
 public class AppStore {
     private StartupConfiguration startupConfiguration;
     private static AppStore instance;
+    private String tableName;
 
-    public static AppStore getInstance(StartupConfiguration startupConfiguration) {
+    public static AppStore getInstance(StartupConfiguration startupConfiguration, String tableName) {
         if (instance == null) {
-            instance = new AppStore(startupConfiguration);
+            instance = new AppStore(startupConfiguration, tableName);
         }
         return instance;
     }
 
     public static AppStore getInstance() {
         return instance;
+    }
+
+    public void setTableName(String tableName) {
+        this.tableName = tableName;
     }
 
 }

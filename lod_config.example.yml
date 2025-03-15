@@ -1,0 +1,14 @@
+app:
+  llm_type: "LOCAL"
+  llmConfig:
+    local:
+      httpModelUrl: "https://localhost:8080/local/llm/api"
+      conversationApiPath: "/conversation"
+
+database:
+  host: "localhost" # -> Defines the host to be used in the database connection (URL or IP) 
+  port: 3306 # -> Defines the port to be used
+  user: "root" # -> Defines the user to be used
+  password: "" # -> Defines the password to be used
+  databaseName: "db" # -> Defines the database name to be used
+  databaseType: "MYSQL" # MYSQL, POSTGRESQL -> Defines the database type to be used
