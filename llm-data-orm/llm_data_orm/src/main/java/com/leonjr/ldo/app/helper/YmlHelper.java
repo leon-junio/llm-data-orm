@@ -50,13 +50,13 @@ public class YmlHelper {
         Set<ConstraintViolation<StartupConfiguration>> violations = validator.validate(config);
 
         if (!violations.isEmpty()) {
-            Main.LOGGER.warn("⚠️ Validation errors found:");
+            LoggerHelper.logger.warn("⚠️ Validation errors found:");
             for (ConstraintViolation<StartupConfiguration> violation : violations) {
-                Main.LOGGER.error("❌ " + violation.getMessage());
+                LoggerHelper.logger.error("❌ " + violation.getMessage());
             }
             throw new RuntimeException("Invalid configuration file!");
         } else {
-            Main.LOGGER.info("✅ Config validated with success: " + config);
+            LoggerHelper.logger.info("✅ Config validated with success: " + config);
         }
     }
 

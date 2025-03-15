@@ -3,9 +3,9 @@ package com.leonjr.ldo;
 import com.leonjr.ldo.app.models.StartupConfiguration;
 
 import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Getter;
 
-@Data
+@Getter
 @AllArgsConstructor
 public class AppStore {
     private StartupConfiguration startupConfiguration;

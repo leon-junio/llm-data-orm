@@ -5,6 +5,7 @@ import com.leonjr.ldo.app.enums.DatabaseType;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Null;
 import lombok.Data;
 import lombok.ToString;
 
@@ -24,4 +25,6 @@ public class DatabaseConfig {
     private String databaseName;
     @NotBlank(message = "The database type is required - Should be either POSTGRES or MYSQL")
     private DatabaseType databaseType;
+    @Null(message = "The schema is not required for MySQL")
+    private String schema;
 }
