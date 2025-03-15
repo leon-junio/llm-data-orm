@@ -1,7 +1,6 @@
 package com.leonjr.ldo;
 
 import java.util.Calendar;
-import java.util.logging.Logger;
 
 import com.leonjr.ldo.app.consts.AppConsts;
 import com.leonjr.ldo.app.helper.LoggerHelper;
