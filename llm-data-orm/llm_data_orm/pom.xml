@@ -142,6 +142,12 @@
             <version>1.0.0-beta2</version>
         </dependency>
 
+        <!-- HTTP handler -->
+        <dependency>
+            <groupId>com.squareup.okhttp3</groupId>
+            <artifactId>okhttp</artifactId>
+            <version>5.0.0-alpha.14</version>
+        </dependency>
     </dependencies>
 
 

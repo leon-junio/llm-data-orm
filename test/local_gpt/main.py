@@ -4,6 +4,11 @@ from typing import List
 from datetime import datetime
 import time
 from g4f.client import Client
+import g4f.Provider
+import logging
+
+# Set up logging
+logging.basicConfig(level=logging.DEBUG)
 
 app = FastAPI()
 
@@ -36,7 +41,10 @@ class ChatRequest(BaseModel):
 @app.post("/v1/chat/completions", response_model=ChatResponse)
 def chat_completion(request: ChatRequest):
     try:
-        client = Client()
+        #print the request
+        logging.debug(request)
+        # client = Client()
+        client = g4f.Client(provider=g4f.Provider.Blackbox)
         response = client.chat.completions.create(
             model=request.model,
             messages=[{"role": msg.role, "content": msg.content} for msg in request.messages],
