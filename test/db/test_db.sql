@@ -1,5 +1,3 @@
-CREATE DATABASE `tcc_test`;
-
 USE `tcc_test`;
 
 CREATE TABLE
