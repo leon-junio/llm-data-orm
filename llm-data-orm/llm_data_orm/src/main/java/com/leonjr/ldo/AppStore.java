@@ -1,5 +1,6 @@
 package com.leonjr.ldo;
 
+import com.leonjr.ldo.app.models.LLMConfig;
 import com.leonjr.ldo.app.models.StartupConfiguration;
 
 import lombok.AllArgsConstructor;
@@ -25,6 +26,10 @@ public class AppStore {
 
     public void setTableName(String tableName) {
         this.tableName = tableName;
+    }
+
+    public LLMConfig getLlmConfig() {
+        return startupConfiguration.getApp().getLlmConfig();
     }
 
 }

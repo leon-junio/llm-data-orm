@@ -1,6 +1,7 @@
 package com.leonjr.ldo.app.models;
 
 import com.leonjr.ldo.app.models.llm.LocalLLMConfig;
+import com.leonjr.ldo.app.models.llm.OpenAIConfig;
 
 import jakarta.validation.constraints.Null;
 import lombok.Data;
@@ -11,4 +12,6 @@ import lombok.ToString;
 public class LLMConfig {
     @Null
     private LocalLLMConfig local;
+    @Null
+    private OpenAIConfig openai;
 }

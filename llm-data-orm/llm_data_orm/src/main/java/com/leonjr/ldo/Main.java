@@ -8,6 +8,7 @@ import com.leonjr.ldo.app.helper.LoggerHelper;
 import com.leonjr.ldo.app.helper.YmlHelper;
 import com.leonjr.ldo.database.handler.DBHelper;
 import com.leonjr.ldo.extractor.DocumentTextExtractor;
+import com.leonjr.ldo.llm.OpenAIAgent;
 
 import picocli.CommandLine;
 import picocli.CommandLine.Option;
@@ -99,6 +100,9 @@ public class Main implements Callable<Integer> {
                     LoggerHelper.logger.info(segment.text());
                 }
             }
+            LoggerHelper.logger.info("Testing OpenAI model...");
+            var response = OpenAIAgent.testModel();
+            LoggerHelper.logger.info("Response: " + response);
             LoggerHelper.logger.info("Test completed!");
         } catch (Exception e) {
             LoggerHelper.logger.error("Error while testing: " + e.getMessage());
