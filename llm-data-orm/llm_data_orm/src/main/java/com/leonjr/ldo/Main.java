@@ -7,6 +7,7 @@ import com.leonjr.ldo.app.consts.AppConsts;
 import com.leonjr.ldo.app.helper.LoggerHelper;
 import com.leonjr.ldo.app.helper.YmlHelper;
 import com.leonjr.ldo.database.handler.DBHelper;
+import com.leonjr.ldo.extractor.DocumentTextExtractor;
 
 import picocli.CommandLine;
 import picocli.CommandLine.Option;
@@ -48,7 +49,7 @@ public class Main implements Callable<Integer> {
             LoggerHelper.logger.info("Listening for incoming inputs...");
         }
         if (test) {
-            test();
+            test(fileOrFolderpath);
         }
         return 0;
     }
@@ -70,13 +71,35 @@ public class Main implements Callable<Integer> {
         }
     }
 
-    public static void test() {
-        LoggerHelper.logger.info("Testing...");
-        var tableDescription = DBHelper
-                .getTableDescription(AppStore.getInstance().getTableName());
-        LoggerHelper.logger.info(tableDescription);
-        LoggerHelper.logger.info("Table description in JSON format:");
-        LoggerHelper.logger.info(tableDescription.toJson());
-        LoggerHelper.logger.info("Test completed!");
+    public static void test(String fileOrFolderpath) {
+        try {
+            LoggerHelper.logger.info("Testing...");
+            var tableDescription = DBHelper
+                    .getTableDescription(AppStore.getInstance().getTableName());
+            LoggerHelper.logger.info(tableDescription);
+            LoggerHelper.logger.info("Table description in JSON format:");
+            LoggerHelper.logger.info(tableDescription.toJson());
+            LoggerHelper.logger.info("Test completed!");
+            var documents = DocumentTextExtractor.getDocument(fileOrFolderpath);
+            LoggerHelper.logger.info("Documents loaded successfully!");
+            LoggerHelper.logger.info("Number of documents: " + documents.size());
+            for (var document : documents) {
+                LoggerHelper.logger.info("Document text:");
+                LoggerHelper.logger.info(document.metadata());
+                LoggerHelper.logger.info(document.text());
+            }
+            LoggerHelper.logger.info("Extracting segments...");
+            for (var document : documents) {
+                var segments = DocumentTextExtractor.getSegments(document);
+                LoggerHelper.logger.info("Number of segments: " + segments.size());
+                for (var segment : segments) {
+                    LoggerHelper.logger.info(segment.text());
+                }
+            }
+            LoggerHelper.logger.info("Test completed!");
+        } catch (Exception e) {
+            LoggerHelper.logger.error("Error while testing: " + e.getMessage());
+            System.exit(1);
+        }
     }
 }
