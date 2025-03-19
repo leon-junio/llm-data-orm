@@ -5,18 +5,21 @@ import java.util.Arrays;
 import java.util.List;
 
 import dev.langchain4j.data.document.Document;
+import dev.langchain4j.data.document.DocumentParser;
 import dev.langchain4j.data.document.loader.FileSystemDocumentLoader;
-import dev.langchain4j.data.document.parser.TextDocumentParser;
+import dev.langchain4j.data.document.parser.apache.tika.ApacheTikaDocumentParser;
 import dev.langchain4j.data.document.splitter.DocumentByParagraphSplitter;
+import org.apache.tika.parser.AutoDetectParser;
 import dev.langchain4j.data.segment.TextSegment;
 
 public final class DocumentTextExtractor {
     public static List<Document> getDocument(String path) throws Exception {
         boolean isFolder = new File(path).isDirectory();
+        DocumentParser parser = new ApacheTikaDocumentParser(AutoDetectParser::new, null, null, null, true);
         if (isFolder) {
-            return FileSystemDocumentLoader.loadDocumentsRecursively(path, new TextDocumentParser());
+            return FileSystemDocumentLoader.loadDocumentsRecursively(path, parser);
         } else {
-            return Arrays.asList(FileSystemDocumentLoader.loadDocument(path, new TextDocumentParser()));
+            return Arrays.asList(FileSystemDocumentLoader.loadDocument(path, parser));
         }
     }
 

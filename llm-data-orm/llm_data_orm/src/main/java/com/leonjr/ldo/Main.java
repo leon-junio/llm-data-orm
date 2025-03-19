@@ -20,6 +20,9 @@ public class Main implements Callable<Integer> {
         System.exit(exitCode);
     }
 
+    // Test parameters:
+    // -c "./lod_config.yml" -f "./test/test_text_file.docx" -t -tn "test"
+
     @Option(names = { "-c", "--config" }, description = "Path to the configuration file")
     private String configFilePath;
 
