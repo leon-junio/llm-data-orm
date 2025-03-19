@@ -2,8 +2,7 @@ app:
   llmType: "LOCAL"
   llmConfig:
     local:
-      httpModelUrl: "https://localhost:8080/local/llm/api"
-      conversationApiPath: "/conversation"
+      httpModelUrl: "http://localhost:8000/v1"
 
 database:
   host: "localhost" # -> Defines the host to be used in the database connection (URL or IP) 

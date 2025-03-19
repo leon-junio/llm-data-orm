@@ -1,0 +1,15 @@
+version: '3.8'
+
+services:
+  gpt-local-server:
+    build:
+      context: .
+      dockerfile: fastapi.dockerfile
+    container_name: gpt_local_server
+    ports:
+      - "8000:8000"
+    volumes:
+      - .:/app
+    environment:
+      - PYTHONUNBUFFERED=1
+    command: uvicorn main:app --host 0.0.0.0 --port 8000
