@@ -8,7 +8,7 @@ import com.leonjr.ldo.app.helper.LoggerHelper;
 import com.leonjr.ldo.app.helper.YmlHelper;
 import com.leonjr.ldo.database.handler.DBHelper;
 import com.leonjr.ldo.extractor.DocumentTextExtractor;
-import com.leonjr.ldo.llm.OpenAIAgent;
+import com.leonjr.ldo.parsing.llm.agents.openai.OpenAIAgent;
 
 import picocli.CommandLine;
 import picocli.CommandLine.Option;

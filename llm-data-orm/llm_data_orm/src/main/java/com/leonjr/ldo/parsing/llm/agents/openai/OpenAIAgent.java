@@ -1,4 +1,4 @@
-package com.leonjr.ldo.llm;
+package com.leonjr.ldo.parsing.llm.agents.openai;
 
 import com.leonjr.ldo.AppStore;
 
