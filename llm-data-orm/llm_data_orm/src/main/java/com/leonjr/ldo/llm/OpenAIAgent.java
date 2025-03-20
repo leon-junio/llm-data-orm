@@ -2,9 +2,6 @@ package com.leonjr.ldo.llm;
 
 import com.leonjr.ldo.AppStore;
 
-import dev.langchain4j.data.message.ImageContent;
-import dev.langchain4j.data.message.TextContent;
-import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.model.openai.OpenAiChatModel;
 
 public class OpenAIAgent {
@@ -19,12 +16,12 @@ public class OpenAIAgent {
         return chatModel.chat("This is a test, how are you felling today?");
     }
 
-    public static String textImage() {
-        UserMessage userMessage = UserMessage.from(
-                TextContent.from("What do you see?"),
-                ImageContent.from(
-                        "https://upload.wikimedia.org/wikipedia/commons/4/47/PNG_transparency_demonstration_1.png"));
-        var response = chatModel.chat(userMessage);
-        return response.aiMessage().text();
-    }
+    // public static String textImage() {
+    //     UserMessage userMessage = UserMessage.from(
+    //             TextContent.from("What do you see?"),
+    //             ImageContent.from(
+    //                     "https://upload.wikimedia.org/wikipedia/commons/4/47/PNG_transparency_demonstration_1.png"));
+    //     var response = chatModel.chat(userMessage);
+    //     return response.aiMessage().text();
+    // }
 }
