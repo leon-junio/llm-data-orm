@@ -42,6 +42,7 @@ class ChatRequest(BaseModel):
     frequency_penalty: float = 0.0
     presence_penalty: float = 0.0
     stop: List[str] = []
+    response_format: object = None
 
 
 @app.post("/v1/chat/completions", response_model=ChatResponse)
@@ -57,6 +58,7 @@ def chat_completion(request: ChatRequest):
             web_search=False,
             max_tokens=request.max_tokens,
             temperature=request.temperature,
+            response_format=request.response_format,
         )
 
         response_message = response.choices[0].message

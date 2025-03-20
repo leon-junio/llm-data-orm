@@ -8,6 +8,7 @@ import com.leonjr.ldo.app.helper.LoggerHelper;
 import com.leonjr.ldo.app.helper.YmlHelper;
 import com.leonjr.ldo.database.handler.DBHelper;
 import com.leonjr.ldo.extractor.DocumentTextExtractor;
+import com.leonjr.ldo.extractor.utils.DocumentContext;
 import com.leonjr.ldo.parsing.llm.agents.openai.OpenAIAgent;
 
 import picocli.CommandLine;
@@ -91,11 +92,12 @@ public class Main implements Callable<Integer> {
             var documents = DocumentTextExtractor.getDocument(fileOrFolderpath);
             LoggerHelper.logger.info("Documents loaded successfully!");
             LoggerHelper.logger.info("Number of documents: " + documents.size());
+
             for (var document : documents) {
-                LoggerHelper.logger.info("Document text:");
-                LoggerHelper.logger.info(document.metadata());
-                LoggerHelper.logger.info(document.text());
+                LoggerHelper.logger.info("Document " + documents.indexOf(document) + 1 + ":");
+                LoggerHelper.logger.info(DocumentContext.getAllAvailableContextFromDocument(document));
             }
+
             LoggerHelper.logger.info("Extracting segments...");
             for (var document : documents) {
                 var segments = DocumentTextExtractor.getSegments(document);
@@ -118,6 +120,12 @@ public class Main implements Callable<Integer> {
             LoggerHelper.logger.info("Testing text and image...");
             response = OpenAIAgent.textImage();
             LoggerHelper.logger.info("Response: " + response);
+
+            LoggerHelper.logger.info("Testing ETL process...");
+            for (var document : documents) {
+                response = OpenAIAgent.testEtlProcess(document, tableDescription.toJson());
+                LoggerHelper.logger.info("Response: " + response);
+            }
 
             LoggerHelper.logger.info("Test completed!");
         } catch (Exception e) {
