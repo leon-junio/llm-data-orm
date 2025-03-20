@@ -1,6 +1,5 @@
 package com.leonjr.ldo.app.helper;
 
-import com.leonjr.ldo.Main;
 import com.leonjr.ldo.app.models.StartupConfiguration;
 
 import jakarta.validation.ConstraintViolation;
@@ -13,7 +12,6 @@ import org.yaml.snakeyaml.Yaml;
 import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.util.Set;
 
 public class YmlHelper {
@@ -32,22 +30,8 @@ public class YmlHelper {
         Yaml yaml = new Yaml();
         StartupConfiguration config = null;
 
-        if (lodConfigPath == null) {
-
-            LoggerHelper.logger.warn("Configuration file not provided, using default test configuration...");
-
-            try (InputStream inputStream = Main.class.getClassLoader().getResourceAsStream("lod_config.example.yml")) {
-
-                if (inputStream == null) {
-                    throw new RuntimeException("lod_config.example.yml not found!");
-                }
-
-                config = yaml.loadAs(inputStream, StartupConfiguration.class);
-            }
-        } else {
-            try (var buffStream = new BufferedInputStream(new FileInputStream(lodConfigPath))) {
-                config = yaml.loadAs(buffStream, StartupConfiguration.class);
-            }
+        try (var buffStream = new BufferedInputStream(new FileInputStream(lodConfigPath))) {
+            config = yaml.loadAs(buffStream, StartupConfiguration.class);
         }
 
         if (config == null) {
