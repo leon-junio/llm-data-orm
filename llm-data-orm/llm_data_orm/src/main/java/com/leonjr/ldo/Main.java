@@ -104,6 +104,17 @@ public class Main implements Callable<Integer> {
             LoggerHelper.logger.info("Testing text...");
             var response = OpenAIAgent.testModel();
             LoggerHelper.logger.info("Response: " + response);
+
+            LoggerHelper.logger.info("Testing text summarization...");
+            for (var document : documents) {
+                response = OpenAIAgent.preSumarize(document);
+                LoggerHelper.logger.info("Response: " + response);
+            }
+
+            LoggerHelper.logger.info("Testing text and image...");
+            response = OpenAIAgent.textImage();
+            LoggerHelper.logger.info("Response: " + response);
+
             LoggerHelper.logger.info("Test completed!");
         } catch (Exception e) {
             LoggerHelper.logger.error("Error while testing: " + e.getMessage());

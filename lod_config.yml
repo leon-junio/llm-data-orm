@@ -6,7 +6,7 @@ app:
     openai:
       apiKey: "test"
       customUrl: "http://localhost:8000/v1"
-      modelName: "GPT_4O_MINI"
+      modelName: "GPT_4O"
 
 database:
   host: "localhost" # -> Defines the host to be used in the database connection (URL or IP) 
