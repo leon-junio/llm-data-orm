@@ -48,6 +48,10 @@ public class Main implements Callable<Integer> {
             CommandLine.usage(this, System.out);
             return 0;
         }
+        if (configFilePath == null || tableName == null) {
+            LoggerHelper.logger.error("Configuration file path and table name are required!");
+            return 1;
+        }
         boot(configFilePath, tableName);
         if (listen) {
             LoggerHelper.logger.info("Listening for incoming inputs...");
