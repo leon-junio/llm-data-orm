@@ -7,9 +7,6 @@ import com.leonjr.ldo.app.consts.AppConsts;
 import com.leonjr.ldo.app.helper.LoggerHelper;
 import com.leonjr.ldo.app.helper.YmlHelper;
 import com.leonjr.ldo.database.handler.DBHelper;
-import com.leonjr.ldo.extractor.DocumentTextExtractor;
-import com.leonjr.ldo.extractor.utils.DocumentContext;
-import com.leonjr.ldo.parsing.llm.agents.openai.OpenAIAgent;
 
 import picocli.CommandLine;
 import picocli.CommandLine.Option;
@@ -23,16 +20,13 @@ public class Main implements Callable<Integer> {
     }
 
     // Test parameters:
-    // -c "./lod_config.yml" -f "./test/test_text_file.docx" -t -tn "test"
+    // -c "./lod_config.yml" -f "./test/test_text_file.docx" -ex -tn "test"
 
     @Option(names = { "-c", "--config" }, description = "Path to the configuration file")
     private String configFilePath;
 
     @Option(names = { "-l", "--listen" }, description = "Listen for incoming inputs")
     private boolean listen;
-
-    @Option(names = { "-t", "--test" }, description = "Run test")
-    private boolean test;
 
     @Option(names = { "-tn", "--table-name" }, description = "Table name to retrieve information")
     private String tableName;
@@ -42,6 +36,9 @@ public class Main implements Callable<Integer> {
 
     @Option(names = { "-f", "--file", "--folder" }, description = "File or folder to process")
     private String fileOrFolderpath;
+
+    @Option(names = { "-ex", "--exec" }, description = "Run execution process")
+    private boolean exec;
 
     @Override
     public Integer call() {
@@ -57,12 +54,18 @@ public class Main implements Callable<Integer> {
         if (listen) {
             LoggerHelper.logger.info("Listening for incoming inputs...");
         }
-        if (test) {
-            test(fileOrFolderpath);
+        if (exec) {
+            return startETLPipeline(fileOrFolderpath);
         }
         return 0;
     }
 
+    /**
+     * Boot the application with the provided configuration file path and table name
+     * 
+     * @param configFilePath Path to the configuration file
+     * @param tableName      Table name to retrieve information
+     */
     public static void boot(String configFilePath, String tableName) {
         LoggerHelper.logger.info("Starting application at ", Calendar.getInstance().getTime());
         LoggerHelper.logger.info(AppConsts.APP_ASC_TITLE);
@@ -80,57 +83,23 @@ public class Main implements Callable<Integer> {
         }
     }
 
-    public static void test(String fileOrFolderpath) {
+    /**
+     * Start the ETL pipeline to process the provided file or folder path
+     * 
+     * @param fileOrFolderPath File or folder path to process
+     * @return 0 if the process finished successfully, 1 otherwise
+     */
+    public int startETLPipeline(String fileOrFolderPath) {
         try {
-            LoggerHelper.logger.info("Testing...");
-            var tableDescription = DBHelper
-                    .getTableDescription(AppStore.getInstance().getTableName());
-            LoggerHelper.logger.info(tableDescription);
-            LoggerHelper.logger.info("Table description in JSON format:");
-            LoggerHelper.logger.info(tableDescription.toJson());
-            LoggerHelper.logger.info("Test completed!");
-            var documents = DocumentTextExtractor.getDocument(fileOrFolderpath);
-            LoggerHelper.logger.info("Documents loaded successfully!");
-            LoggerHelper.logger.info("Number of documents: " + documents.size());
-
-            for (var document : documents) {
-                LoggerHelper.logger.info("Document " + documents.indexOf(document) + 1 + ":");
-                LoggerHelper.logger.info(DocumentContext.getAllAvailableContextFromDocument(document));
-            }
-
-            LoggerHelper.logger.info("Extracting segments...");
-            for (var document : documents) {
-                var segments = DocumentTextExtractor.getSegments(document);
-                LoggerHelper.logger.info("Number of segments: " + segments.size());
-                for (var segment : segments) {
-                    LoggerHelper.logger.info(segment.text());
-                }
-            }
-            LoggerHelper.logger.info("Testing OpenAI model...");
-            LoggerHelper.logger.info("Testing text...");
-            var response = OpenAIAgent.testModel();
-            LoggerHelper.logger.info("Response: " + response);
-
-            LoggerHelper.logger.info("Testing text summarization...");
-            for (var document : documents) {
-                response = OpenAIAgent.preSumarize(document);
-                LoggerHelper.logger.info("Response: " + response);
-            }
-
-            LoggerHelper.logger.info("Testing text and image...");
-            response = OpenAIAgent.textImage();
-            LoggerHelper.logger.info("Response: " + response);
-
-            LoggerHelper.logger.info("Testing ETL process...");
-            for (var document : documents) {
-                response = OpenAIAgent.testEtlProcess(document, tableDescription.toJson());
-                LoggerHelper.logger.info("Response: " + response);
-            }
-
-            LoggerHelper.logger.info("Test completed!");
+            LoggerHelper.logger.info("ETL Pipeline started to process file/folder: " + fileOrFolderPath);
+            ETLPipeline etlPipeline = new ETLPipeline(fileOrFolderPath);
+            etlPipeline.boot();
+            LoggerHelper.logger.info("ETL Pipeline finished successfully!");
+            return 0;
         } catch (Exception e) {
-            LoggerHelper.logger.error("Error while testing: " + e.getMessage());
-            System.exit(1);
+            LoggerHelper.logger.error("ETL Pipeline failed to execute: " + e.getMessage());
+            LoggerHelper.logger.catching(e);
+            return 1;
         }
     }
 }
