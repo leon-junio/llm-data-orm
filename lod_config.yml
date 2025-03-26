@@ -1,12 +1,12 @@
 app:
-  llmType: "LOCAL"
+  stopIfInvalidatedDocument: true
+  maxExecutorsThreads: 5
+  llmType: "OPENAI"
   llmConfig:
-    # local:
-    #   httpModelUrl: "http://localhost:8000/v1"
     openai:
       apiKey: "test"
       customUrl: "http://localhost:8000/v1"
-      modelName: "GPT_4O"
+      modelName: "GPT_4O_MINI"
 
 database:
   host: "localhost" # -> Defines the host to be used in the database connection (URL or IP) 

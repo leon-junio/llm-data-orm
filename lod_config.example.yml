@@ -1,5 +1,7 @@
 app:
-  llm_type: "LOCAL"
+  stopIfInvalidatedDocument: false
+  maxExecutorsThreads: 10
+  llm_type: "OPENAI"
   llmConfig:
     local:
       httpModelUrl: "https://localhost:8080/local/llm/api"
