@@ -1,12 +1,13 @@
 package com.leonjr.ldo.extractor;
 
 import java.io.File;
+import java.nio.file.Files;
+import java.nio.file.Paths;
 import java.util.Arrays;
 import java.util.List;
 
 import dev.langchain4j.data.document.Document;
 import dev.langchain4j.data.document.DocumentParser;
-import dev.langchain4j.data.document.Metadata;
 import dev.langchain4j.data.document.loader.FileSystemDocumentLoader;
 import dev.langchain4j.data.document.parser.apache.tika.ApacheTikaDocumentParser;
 
@@ -14,6 +15,7 @@ import org.apache.tika.parser.AutoDetectParser;
 
 import com.leonjr.ldo.extractor.utils.DocumentSegmenter;
 import com.leonjr.ldo.extractor.utils.ImageUtils;
+import com.leonjr.ldo.parsing.llm.AiHelper;
 
 import dev.langchain4j.data.segment.TextSegment;
 
@@ -25,13 +27,9 @@ public final class DocumentTextExtractor {
             return FileSystemDocumentLoader.loadDocumentsRecursively(path, parser);
         } else {
             if (ImageUtils.isImage(path)) {
-                var doc = Document.document(path,
-                        Metadata.metadata("type", "image")
-                                .merge(Metadata.metadata("file_path", path)
-                                        .merge(Metadata.metadata(Document.ABSOLUTE_DIRECTORY_PATH,
-                                                path.substring(0, path.lastIndexOf(File.separator))))
-                                        .merge(Metadata.metadata(Document.FILE_NAME,
-                                                path.substring(path.lastIndexOf(File.separator) + 1)))));
+                var imageAsBase64 = ImageUtils.imageToBase64(path);
+                var imageSummary = AiHelper.genericImageSummary(imageAsBase64, Files.probeContentType(Paths.get(path)));
+                var doc = ImageUtils.createDocumentFromImagePath(path, imageSummary);
                 return Arrays.asList(doc);
             }
             return Arrays.asList(FileSystemDocumentLoader.loadDocument(path, parser));

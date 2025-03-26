@@ -3,9 +3,17 @@ package com.leonjr.ldo.parsing.llm;
 import java.time.Duration;
 
 import com.leonjr.ldo.AppStore;
+import com.leonjr.ldo.app.helper.LoggerHelper;
 import com.leonjr.ldo.parsing.etl.interfaces.ETLProcessor;
 
+import dev.langchain4j.data.message.ImageContent;
+import dev.langchain4j.data.message.TextContent;
+import dev.langchain4j.data.message.UserMessage;
+import dev.langchain4j.data.message.ImageContent.DetailLevel;
 import dev.langchain4j.model.chat.ChatLanguageModel;
+import dev.langchain4j.model.chat.request.ChatRequest;
+import dev.langchain4j.model.chat.request.ResponseFormat;
+import dev.langchain4j.model.chat.request.ResponseFormatType;
 import dev.langchain4j.model.openai.OpenAiChatModel;
 import dev.langchain4j.service.AiServices;
 import lombok.Data;
@@ -43,6 +51,34 @@ public class AiHelper {
                 .temperature(0.7)
                 .maxTokens(4096)
                 .build();
+    }
+
+    public static String genericImageSummary(String base64Image, String mimeType) throws Exception {
+        if (base64Image == null || mimeType == null) {
+            throw new IllegalArgumentException("base64Image and imageExtension must not be null");
+        }
+        var chatModel = OpenAiChatModel.builder()
+                .baseUrl(AppStore.getInstance().getLlmConfig().getOpenai().getCustomUrl())
+                .apiKey(AppStore.getInstance().getLlmConfig().getOpenai().getApiKey())
+                .modelName(AppStore.getInstance().getLlmConfig().getOpenai().getModelName().getModelName())
+                .timeout(Duration.ofMinutes(10))
+                .temperature(0.8)
+                .maxTokens(10000)
+                .build();
+        var etlProcessor = buildNewAssistent(chatModel);
+        UserMessage userMessage = UserMessage.from(
+                TextContent.from("Image to summarize: "),
+                ImageContent.from(base64Image, mimeType, DetailLevel.LOW));
+        ResponseFormat responseFormat = ResponseFormat.builder()
+                .type(ResponseFormatType.JSON)
+                .build();
+        ChatRequest chatRequest = ChatRequest.builder()
+                .responseFormat(responseFormat)
+                .messages(userMessage)
+                .build();
+        var response = etlProcessor.imageSummary(chatRequest);
+        LoggerHelper.logger.info("Image summary response: " + response);
+        return response;
     }
 
 }

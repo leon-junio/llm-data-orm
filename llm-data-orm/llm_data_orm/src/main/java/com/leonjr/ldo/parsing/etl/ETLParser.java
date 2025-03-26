@@ -44,7 +44,7 @@ public class ETLParser {
                 .responseFormat(responseFormat)
                 .messages(systemMessage)
                 .build();
-        var response = etlProcessor.chat(chatRequest);
+        var response = etlProcessor.process(chatRequest);
         return response;
     }
 

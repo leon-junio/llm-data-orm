@@ -51,6 +51,7 @@ def chat_completion(request: ChatRequest):
         #print the request
         logging.debug(request)
         client = Client()
+
         # client = g4f.Client(provider=g4f.Provider.Blackbox)
         response = client.chat.completions.create(
             model=request.model,
@@ -59,6 +60,7 @@ def chat_completion(request: ChatRequest):
             max_tokens=request.max_tokens,
             temperature=request.temperature,
             response_format=request.response_format,
+            stop=request.stop,
         )
 
         response_message = response.choices[0].message

@@ -43,6 +43,12 @@ public class DocumentSegmenter {
             case "md":
                 splitter = DocumentSplitters.recursive(DEFAULT_MAX_SEGMENT_SIZE, MIN_SEGMENT_SIZE);
                 break;
+            case "jpg":
+            case "jpeg":
+            case "png":
+            case "gif":
+            case "webp":
+                return List.of(TextSegment.from(document.text()));
             default:
                 splitter = new DocumentByLineSplitter(DEFAULT_MAX_SEGMENT_SIZE, MIN_SEGMENT_SIZE);
         }
