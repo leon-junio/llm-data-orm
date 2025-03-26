@@ -2,6 +2,9 @@ package com.leonjr.ldo.extractor;
 
 import org.apache.poi.openxml4j.opc.OPCPackage;
 import org.apache.poi.xwpf.usermodel.XWPFPictureData;
+
+import dev.langchain4j.data.document.Document;
+
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.apache.poi.xslf.usermodel.XMLSlideShow;
 import org.apache.poi.xslf.usermodel.XSLFPictureData;
@@ -71,7 +74,9 @@ public class DocumentImageExtractor {
         return images;
     }
 
-    public static List<BufferedImage> extractImages(String filePath) throws Exception {
+    public static List<BufferedImage> extractImages(Document document) throws Exception {
+        String filePath = document.metadata().getString(Document.ABSOLUTE_DIRECTORY_PATH) + File.separator
+                + document.metadata().getString(Document.FILE_NAME);
         if (filePath.endsWith(".pdf")) {
             return extractImagesFromPDF(filePath);
         } else if (filePath.endsWith(".docx")) {
