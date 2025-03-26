@@ -35,16 +35,16 @@ public class DBHelper {
      * @param tableName Table name to retrieve information
      * @return TableDescription object containing table information
      */
-    public static TableDescription getTableDescription(String tableName) {
+    public static TableDescription getTableDescription(String tableName) throws Exception {
         try (Connection connection = ConnectionHandler.getConnection()) {
-            var dbType = AppStore.getInstance().getStartupConfiguration().getDatabase().getDatabaseType();
+            var dbType = AppStore.getStartConfigs().getDatabase().getDatabaseType();
             return TableSchemaRetriever.getTableInfo(connection, tableName, dbType);
         } catch (SQLException e) {
             LoggerHelper.logger.error("Error while retrieving table description: " + e.getMessage());
-            return null;
+            throw e;
         } catch (Exception e) {
             LoggerHelper.logger.error("Something went wrong: " + e.getMessage());
-            return null;
+            throw e;
         }
     }
 

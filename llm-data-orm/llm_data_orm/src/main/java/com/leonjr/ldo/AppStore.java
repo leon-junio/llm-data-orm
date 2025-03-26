@@ -32,4 +32,8 @@ public class AppStore {
         return startupConfiguration.getApp().getLlmConfig();
     }
 
+
+    public static StartupConfiguration getStartConfigs(){
+        return AppStore.getInstance().getStartupConfiguration();
+    }
 }
