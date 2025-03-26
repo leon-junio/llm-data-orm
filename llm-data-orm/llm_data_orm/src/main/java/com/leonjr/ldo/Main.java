@@ -20,15 +20,12 @@ public class Main implements Callable<Integer> {
     }
 
     // Test parameters:
-    // -c "./lod_config.yml" -f "./test/test_text_file.docx" -ex -tn "test"
+    // -c "./lod_config.yml" -f "./test/test_text_file.docx" -e -t "test"
 
     @Option(names = { "-c", "--config" }, description = "Path to the configuration file")
     private String configFilePath;
 
-    @Option(names = { "-l", "--listen" }, description = "Listen for incoming inputs")
-    private boolean listen;
-
-    @Option(names = { "-tn", "--table-name" }, description = "Table name to retrieve information")
+    @Option(names = { "-t", "--table" }, description = "Table name to retrieve information")
     private String tableName;
 
     @Option(names = { "-h", "--help" }, usageHelp = true, description = "Display a help message")
@@ -37,7 +34,7 @@ public class Main implements Callable<Integer> {
     @Option(names = { "-f", "--file", "--folder" }, description = "File or folder to process")
     private String fileOrFolderpath;
 
-    @Option(names = { "-ex", "--exec" }, description = "Run execution process")
+    @Option(names = { "-e", "--exec" }, description = "Run execution process")
     private boolean exec;
 
     @Override
@@ -51,9 +48,6 @@ public class Main implements Callable<Integer> {
             return 1;
         }
         boot(configFilePath, tableName);
-        if (listen) {
-            LoggerHelper.logger.info("Listening for incoming inputs...");
-        }
         if (exec) {
             return startETLPipeline(fileOrFolderpath);
         }
