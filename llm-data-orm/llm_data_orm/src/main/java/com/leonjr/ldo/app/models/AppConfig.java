@@ -3,6 +3,7 @@ package com.leonjr.ldo.app.models;
 import com.leonjr.ldo.app.enums.LLMType;
 
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Null;
 import lombok.Data;
 import lombok.ToString;
@@ -12,6 +13,13 @@ import lombok.ToString;
 public class AppConfig {
     @NotBlank(message = "The LLM type is required")
     private LLMType llmType;
+
     @Null
     private LLMConfig llmConfig;
+
+    @NotBlank(message = "MAX executors threads is required - default 10")
+    private Integer maxExecutorsThreads = 10;
+
+    @NotNull(message = "Stop if invalidated document was found when parsing data from documents - default false")
+    private boolean stopIfInvalidatedDocument = false;
 }
