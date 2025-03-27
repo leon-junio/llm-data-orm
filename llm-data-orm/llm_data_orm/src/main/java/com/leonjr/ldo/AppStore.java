@@ -12,10 +12,11 @@ public class AppStore {
     private StartupConfiguration startupConfiguration;
     private static AppStore instance;
     private String tableName;
+    private boolean debugAll;
 
-    public static AppStore getInstance(StartupConfiguration startupConfiguration, String tableName) {
+    public static AppStore getInstance(StartupConfiguration startupConfiguration, String tableName, boolean debugAll) {
         if (instance == null) {
-            instance = new AppStore(startupConfiguration, tableName);
+            instance = new AppStore(startupConfiguration, tableName, debugAll);
         }
         return instance;
     }
@@ -32,8 +33,7 @@ public class AppStore {
         return startupConfiguration.getApp().getLlmConfig();
     }
 
-
-    public static StartupConfiguration getStartConfigs(){
+    public static StartupConfiguration getStartConfigs() {
         return AppStore.getInstance().getStartupConfiguration();
     }
 }
