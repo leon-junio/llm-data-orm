@@ -38,7 +38,7 @@ public class DocumentSegmenter {
                 splitter = new DocumentByRegexSplitter("<.*?>", " ", DEFAULT_MAX_SEGMENT_SIZE, MIN_SEGMENT_SIZE);
                 break;
             case "xlsx":
-                splitter = new DocumentBySentenceSplitter(DEFAULT_MAX_SEGMENT_SIZE, MIN_SEGMENT_SIZE);
+                splitter = new DocumentByParagraphSplitter(DEFAULT_MAX_SEGMENT_SIZE, MIN_SEGMENT_SIZE);
                 break;
             case "md":
                 splitter = DocumentSplitters.recursive(DEFAULT_MAX_SEGMENT_SIZE, MIN_SEGMENT_SIZE);
