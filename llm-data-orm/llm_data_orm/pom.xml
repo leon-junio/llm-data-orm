@@ -154,6 +154,12 @@
             <version>3.0.4</version>
         </dependency>
 
+        <!-- NLP Utilities -->
+        <dependency>
+            <groupId>org.apache.opennlp</groupId>
+            <artifactId>opennlp-tools</artifactId>
+            <version>2.3.0</version>
+        </dependency>
 
     </dependencies>
 
