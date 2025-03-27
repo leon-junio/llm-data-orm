@@ -7,14 +7,17 @@ public class PromptTexts {
       You will also receive a **chunk** of text extracted from a document.
       This text is part of a larger document, and multiple workers will process different chunks in parallel.
       All chunks also contain an overall description of the document saved as metadata. Also have more data in the document that is not in the chunk.
+      Pay attention to schema structure in another language, like Portuguese, Spanish, etc. The schema will be in English, but the text can be in another language. If you find a field that matches the schema but is in another language, you should still extract it. Sometimes in tables or xlsx files you will extract text of one line,
+      you can use summary of the document to help you to extract the correct information.
       Metadata can be used to provide context for the chunk and help you decide what data to extract.
       Avoid fill autoincremental fields, like IDs, with data from the text. Only extract data that is explicitly present in the chunk. If a field is not present in the chunk, leave it empty., should
       use valid json format.
       Boolean values should be represented as true or false. Varchars and text fields should be returned as strings (varchars should consider text constrainsts limititations as max chars if presented). Numbers should be returned as numbers. Dates should be returned as strings in the format "YYYY-MM-DD".
+      PAY atention to the DATABASE SCHEMA, it will be used to validate the data extracted from the text. So fill BIT or BOOLEAN in the right way, validate all constraints and data types.
       ### **Your Task:**
       1 **Extract relevant information**: If the chunk contains data that matches the table schema, extract it and return a well-structured JSON.
       2 **Ignore irrelevant chunks**: If no relevant data is found in the chunk, return NOTHING as response or simply return an empty JSON array.
-      3 **Maintain structure**: The extracted JSON **must** follow the schema exactly (same column order).
+      3 **Maintain structure**: The extracted JSON **must** follow the schema (same column order).
       4 **Ensure consistency**: Avoid duplicating records across different chunks. Only return data if confidently extracted.
       ### **Response Format:**
       - **If data is found**: Return a valid JSON **array** where each object corresponds to a row in the table.
@@ -36,16 +39,18 @@ public class PromptTexts {
   public static final String PRE_SUMMARIZE = """
       You are tasked with summarizing and validate the content of a document to generate its metadata. The document will be parsed to be inserted into a database, and the summary will be used to provide context for the document's content.
       Your summary **must be a single paragraph in English** and should be the **only content** in the response. You also responsible for validating the document's content with the provided table structure (check if the document contains the expected data).
+      Pay attention to schema structure in another languages, like Portuguese, Spanish, etc. The schema will be in English, but the text can be in another language. If you find a field that matches the schema but is in another language, you should still extract it. Sometimes in tables or xlsx files
+      you must use the full text to validate the data and extract the correct information.
       You will receive a **description of the content/table struct** and the **full text of the document**. Your answer should not contain the original table struct or any data about how the original table is structured.
       Provide information of how document is structured, like tables, lists, etc. If the document is not valid (Empty text, language undefined or text not related to table description), return `"INVALID_PARSING"`.
       ### **Guidelines:**
       - Provide a **concise and informative summary** of the document’s content.
-      - Focus on **key details**, such as **table structures, titles, and descriptions**.
-      - **Do not include** the document's title, author, or any metadata unrelated to its content.
+      - Focus on **key details**, such as **table structures, titles, and descriptions**. Here you must verify if the document contains the expected data in subtexts, tables or hided into the text.
       - If the document contains structured data (e.g., tables, lists), mention relevant **columns or fields** explicitly.
-      - **DO NOT** generate additional text, explanations, or formatting.
+      - **DO NOT** add into you summary any of additional text, explanations, or formatting that you generate.
       ### **Handling Missing Information:**
       - If the document **does not contain extractable content**, return an **single string (`"INVALID_PARSING"`)** **without explanations**. -> You should **not** attempt to summarize the document in this case.
+      - An invalid document is a file that does not contain any information related to the table description (pay attention to the schema structure in another language and information inserted inside the text or tables).
       ### **Input Details:**
       You will receive:
       1. **The full text of the document.**
