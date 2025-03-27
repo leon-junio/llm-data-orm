@@ -14,6 +14,7 @@ import com.leonjr.ldo.parsing.etl.ETLParser;
 import com.leonjr.ldo.parsing.etl.interfaces.ETLProcessor;
 import com.leonjr.ldo.parsing.etl.models.ETLDocument;
 import com.leonjr.ldo.parsing.llm.AiHelper;
+import com.leonjr.ldo.validation.ETLValidation;
 
 import ch.qos.logback.core.util.Duration;
 import lombok.Data;
@@ -69,6 +70,10 @@ public final class ETLPipeline {
                         .info("Found " + foundedImages.size() + " images in document " + documents.indexOf(document));
             }
             rawDocuments.add(ETLDocument.builder().document(document).images(foundedImages).build());
+            if (AppStore.getInstance().isDebugAll()) {
+                LoggerHelper.logger.info("Document " + documents.indexOf(document) + ":");
+                LoggerHelper.logger.info(document);
+            }
         }
         LoggerHelper.logger.info("Number of documents found at the path: " + rawDocuments.size());
     }
@@ -114,6 +119,10 @@ public final class ETLPipeline {
                 continue;
             }
             etlDocument.getDocument().metadata().put("sumarized", sumarized);
+            if (AppStore.getInstance().isDebugAll()) {
+                LoggerHelper.logger.info("Document " + rawDocuments.indexOf(etlDocument) + ":");
+                LoggerHelper.logger.info(sumarized);
+            }
         }
         validatedDocuments = rawDocuments.stream().filter(d -> d.getDocument().metadata().containsKey("sumarized"))
                 .toList();
@@ -133,6 +142,13 @@ public final class ETLPipeline {
         for (var etlDocument : validatedDocuments) {
             var documentsSegments = DocumentTextExtractor.getSegments(etlDocument.getDocument());
             LoggerHelper.logger.info("Number of segments found: " + documentsSegments.size());
+            if (AppStore.getInstance().isDebugAll()) {
+                LoggerHelper.logger.info("Document " + rawDocuments.indexOf(etlDocument) + ":");
+                LoggerHelper.logger.info("Segments found:");
+                for (var segment : documentsSegments) {
+                    LoggerHelper.logger.info(segment);
+                }
+            }
             var parsedResponse = etlAgentParser.executeParsing(documentsSegments);
             var parsedResponseAsJson = JsonResponseTransformer.parseJson(parsedResponse);
             LoggerHelper.logger.info("Parsing response to document " + rawDocuments.indexOf(etlDocument) + ":");
@@ -143,11 +159,15 @@ public final class ETLPipeline {
     }
 
     // Test and validate parsing process steps
-    /**
-     * 
-     * 
-     * 
-     */
+    public void validateETLWithLocalTests() throws Exception {
+        for (var etlDocument : validatedDocuments) {
+            var response = ETLValidation.validateParsingLocally(etlDocument.getDocument().text(),
+                    etlDocument.getJsonSchema(),
+                    tableDescription, etlDocument.getParsedResponse());
+            LoggerHelper.logger.info("Document " + rawDocuments.indexOf(etlDocument) + ":");
+            LoggerHelper.logger.info("Validation response:" + System.lineSeparator() + response);
+        }
+    }
 
     // Insert all validated and tested data into the database
     /**
@@ -174,13 +194,16 @@ public final class ETLPipeline {
         endExecutionTime = System.currentTimeMillis();
         // print results
         debugETLResults();
+        // print tests and validations
+        validateETLWithLocalTests();
     }
 
     /**
      * Debug ETL results - This method will print the ETL results
      */
     public void debugETLResults() {
-        LoggerHelper.logger.info("=========================================== ETL Results ===========================================");
+        LoggerHelper.logger.info(
+                "=========================================== ETL Results ===========================================");
         LoggerHelper.logger.info("Number of documents found: " + rawDocuments.size());
         LoggerHelper.logger.info("Number of validated documents: " + validatedDocuments.size());
         var etlDuration = Duration.buildByMilliseconds(endExecutionTime - startExecutionTime);
@@ -189,6 +212,7 @@ public final class ETLPipeline {
             LoggerHelper.logger.info("Document " + rawDocuments.indexOf(etlDocument) + ":");
             LoggerHelper.logger.info(etlDocument);
         }
-        LoggerHelper.logger.info("===================================================================================================");
+        LoggerHelper.logger.info(
+                "===================================================================================================");
     }
 }
