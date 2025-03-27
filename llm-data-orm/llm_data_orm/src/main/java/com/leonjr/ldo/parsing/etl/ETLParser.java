@@ -33,6 +33,21 @@ public class ETLParser {
     @Builder.Default
     private List<Future<String>> openaiResults = new ArrayList<>();
 
+    
+
+    public String preSummarize(String documentData) {
+        SystemMessage systemMessage = SystemMessage.from(
+                "Table description" + tableDescription + "\n Text: "
+                        + documentData);
+        ResponseFormat jsonFormat = getJsonResponseFormat();
+        ChatRequest chatRequest = ChatRequest.builder()
+                .responseFormat(jsonFormat)
+                .messages(systemMessage)
+                .build();
+        var response = etlProcessor.preSummarize(chatRequest);
+        return response;
+    }
+
     public String processChunkWithAiService(String chunk) {
         SystemMessage systemMessage = SystemMessage.from(
                 "Table_structure" + tableDescription + "\n chunk: "
@@ -45,19 +60,6 @@ public class ETLParser {
                 .messages(systemMessage)
                 .build();
         var response = etlProcessor.process(chatRequest);
-        return response;
-    }
-
-    public String preSummarize(String documentData) {
-        SystemMessage systemMessage = SystemMessage.from(
-                "Table description" + tableDescription + "\n Text: "
-                        + documentData);
-        ResponseFormat jsonFormat = getJsonResponseFormat();
-        ChatRequest chatRequest = ChatRequest.builder()
-                .responseFormat(jsonFormat)
-                .messages(systemMessage)
-                .build();
-        var response = etlProcessor.preSummarize(chatRequest);
         return response;
     }
 
