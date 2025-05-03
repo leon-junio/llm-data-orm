@@ -1,6 +1,7 @@
 app:
   stopIfInvalidatedDocument: true
-  maxExecutorsThreads: 5
+  maxExecutorsThreads: 16
+  maxETLProcessors: 6
   llmType: "OPENAI"
   llmConfig:
     openai:
@@ -13,5 +14,5 @@ database:
   port: 3306 # -> Defines the port to be used
   user: "root" # -> Defines the user to be used
   password: "" # -> Defines the password to be used
-  databaseName: "tcc_test" # -> Defines the database name to be used
+  databaseName: "soccer_test" # -> Defines the database name to be used
   databaseType: "MYSQL" # MYSQL, POSTGRESQL -> Defines the database type to be used
