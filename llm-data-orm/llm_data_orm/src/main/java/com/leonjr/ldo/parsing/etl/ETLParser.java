@@ -5,8 +5,10 @@ import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import com.leonjr.ldo.AppStore;
+import com.leonjr.ldo.app.helper.LoggerHelper;
 import com.leonjr.ldo.extractor.utils.DocumentContext;
 import com.leonjr.ldo.parsing.etl.interfaces.ETLProcessor;
 
@@ -27,15 +29,8 @@ public class ETLParser {
     private String tableDescription;
     @NonNull
     private ETLProcessor etlProcessor;
-    @Builder.Default
-    private ExecutorService threadsExecutor = Executors
-            .newFixedThreadPool(AppStore.getStartConfigs().getApp().getMaxExecutorsThreads());
-    @Builder.Default
-    private List<Future<String>> openaiResults = new ArrayList<>();
 
-    
-
-    public String preSummarize(String documentData) {
+    public String preSummarize(String documentData) throws Exception {
         SystemMessage systemMessage = SystemMessage.from(
                 "Table description" + tableDescription + "\n Text: "
                         + documentData);
@@ -48,7 +43,7 @@ public class ETLParser {
         return response;
     }
 
-    public String processChunkWithAiService(String chunk) {
+    public String processChunkWithAiService(String chunk) throws Exception {
         SystemMessage systemMessage = SystemMessage.from(
                 "Table_structure" + tableDescription + "\n chunk: "
                         + chunk);
@@ -63,26 +58,35 @@ public class ETLParser {
         return response;
     }
 
-    public String executeParsing(List<TextSegment> chunks) {
+    public String executeParsing(List<TextSegment> chunks) throws Exception {
+        ExecutorService executor = Executors.newFixedThreadPool(
+                AppStore.getStartConfigs().getApp().getMaxExecutorsThreads());
+        List<Future<String>> futures = new ArrayList<>();
         for (TextSegment chunk : chunks) {
-            openaiResults.add(threadsExecutor
-                    .submit(() -> processChunkWithAiService(DocumentContext.getAllAvailableContextFromSegment(chunk))));
+            futures.add(executor.submit(
+                    () -> processChunkWithAiService(
+                            DocumentContext.getAllAvailableContextFromSegment(chunk))));
         }
         StringBuilder finalJson = new StringBuilder("[");
-        for (Future<String> result : openaiResults) {
+        for (Future<String> f : futures) {
             try {
-                finalJson.append(result.get()).append(",");
+                finalJson.append(f.get()).append(",");
             } catch (Exception e) {
-                e.printStackTrace();
+                LoggerHelper.logger.error(
+                        "Error while processing chunk: " + e.getMessage());
+                throw e;
             }
         }
-        finalJson.deleteCharAt(finalJson.lastIndexOf(","));
-        threadsExecutor.shutdown();
+        if (finalJson.charAt(finalJson.length() - 1) == ',') {
+            finalJson.deleteCharAt(finalJson.length() - 1);
+        }
         finalJson.append("]");
+        executor.shutdown();
+        executor.awaitTermination(1, TimeUnit.MINUTES);
         return finalJson.toString();
     }
 
-    public ResponseFormat getJsonResponseFormat() {
+    public ResponseFormat getJsonResponseFormat() throws Exception {
         ResponseFormat responseFormat = ResponseFormat.builder()
                 .type(ResponseFormatType.JSON)
                 .build();
