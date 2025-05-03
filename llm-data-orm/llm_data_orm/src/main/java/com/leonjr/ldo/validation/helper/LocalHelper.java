@@ -9,7 +9,6 @@ import java.util.stream.Collectors;
 
 import opennlp.tools.tokenize.SimpleTokenizer;
 import com.fasterxml.jackson.databind.JsonNode;
-import com.leonjr.ldo.app.helper.LoggerHelper;
 import com.leonjr.ldo.database.models.TableDescription;
 
 public final class LocalHelper {
@@ -86,9 +85,6 @@ public final class LocalHelper {
     }
 
     public static double calculateJaccardSimilarity(String text1, String text2) {
-        System.out.println(text1);
-        System.out.println(" -------------------------------------------- ");
-        System.out.println(text2);
 
         Set<String> set1 = Arrays.stream(text1.toLowerCase().split("\\s+"))
                 .collect(Collectors.toSet());
