@@ -1,7 +1,13 @@
 package com.leonjr.ldo;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import com.leonjr.ldo.app.helper.LoggerHelper;
 import com.leonjr.ldo.database.handler.DBHelper;
@@ -43,12 +49,17 @@ public final class ETLPipeline {
      * @throws Exception If an error occurs while extracting the table schema
      */
     private void describeDatabaseTable() throws Exception {
+        long startTime = System.currentTimeMillis();
         LoggerHelper.logger.info("Describing database table...");
         tableDescription = DBHelper
                 .getTableDescription(AppStore.getInstance().getTableName());
         LoggerHelper.logger.info(tableDescription);
         LoggerHelper.logger.info("Table description in JSON format:");
         LoggerHelper.logger.info(tableDescription.toJson());
+        LoggerHelper.logger.info("Table description loaded successfully!");
+        long endTime = System.currentTimeMillis();
+        LoggerHelper.logger.info("Table description time: "
+                + Duration.buildByMilliseconds(endTime - startTime));
     }
 
     /**
@@ -60,6 +71,7 @@ public final class ETLPipeline {
      */
     private void extractDataFromDocuments() throws Exception {
         LoggerHelper.logger.info("Loading documents and extracting data...");
+        long startTime = System.currentTimeMillis();
         rawDocuments = new ArrayList<>();
         var documents = DocumentTextExtractor.getDocument(fileOrFolderPath);
         LoggerHelper.logger.info("Documents loaded successfully!");
@@ -76,6 +88,9 @@ public final class ETLPipeline {
             }
         }
         LoggerHelper.logger.info("Number of documents found at the path: " + rawDocuments.size());
+        long endTime = System.currentTimeMillis();
+        LoggerHelper.logger.info("Data extraction time: "
+                + Duration.buildByMilliseconds(endTime - startTime));
     }
 
     /**
@@ -102,31 +117,68 @@ public final class ETLPipeline {
      *                   documents or if the document is not related with the table
      *                   selected
      */
-    private void validateAndSummarizeDocuments() throws Exception {
-        LoggerHelper.logger.info("Validating and summarizing documents...");
-        for (var etlDocument : rawDocuments) {
-            var sumarized = etlAgentParser
-                    .preSummarize(DocumentContext.getAllAvailableContextFromDocument(etlDocument.getDocument()));
-            if (sumarized.trim().equalsIgnoreCase("INVALID_PARSING")) {
-                LoggerHelper.logger.error("INVALID_PARSING Document! Document is not related with table selected: "
-                        + etlDocument.getDocument().metadata().toString());
-                if (AppStore.getStartConfigs().getApp().isStopIfInvalidatedDocument()) {
-                    throw new RuntimeException(
-                            "INVALID_PARSING Document! Could not proceed with the ETL process because stopIfInvalidatedDocument is setted as true. Could not determine if the document is related with the table selected: "
-                                    + "document: " + rawDocuments.indexOf(etlDocument) + "table: "
-                                    + AppStore.getInstance().getTableName());
+    private void validateAndSummarizeDocuments() throws InterruptedException {
+        long startValidationTime = System.currentTimeMillis();
+        LoggerHelper.logger.info("Validating and summarizing documents in parallel...");
+
+        int maxEtlProcessors = AppStore.getStartConfigs().getApp().getMaxETLProcessors();
+        ExecutorService etlProcessors = Executors.newFixedThreadPool(maxEtlProcessors);
+        List<Future<Integer>> futures = new ArrayList<>();
+
+        for (int i = 0; i < rawDocuments.size(); i++) {
+            final int index = i;
+            ETLDocument etlDocument = rawDocuments.get(i);
+
+            futures.add(etlProcessors.submit(() -> {
+                try {
+                    String context = DocumentContext.getAllAvailableContextFromDocument(etlDocument.getDocument());
+                    String summarized = etlAgentParser.preSummarize(context);
+
+                    if (summarized == null || "INVALID_PARSING".equalsIgnoreCase(summarized.trim())) {
+                        LoggerHelper.logger
+                                .error("[Document " + index + "] INVALID_PARSING: not related to selected table.");
+                        // mark metadata if needed
+                        if (AppStore.getStartConfigs().getApp().isStopIfInvalidatedDocument()) {
+                            LoggerHelper.logger.warn("[Document " + index
+                                    + "] stopIfInvalidatedDocument=true, but continuing processing.");
+                        }
+                        return null;
+                    }
+
+                    etlDocument.getDocument().metadata().put("summarized", summarized);
+                    if (AppStore.getInstance().isDebugAll()) {
+                        LoggerHelper.logger.info("[Document " + index + "] Summarized: " + summarized);
+                    }
+                    return index;
+
+                } catch (Exception ex) {
+                    LoggerHelper.logger.error("[Document " + index + "] Error during summarization: " + ex.getMessage(),
+                            ex);
+                    return null;
                 }
-                continue;
-            }
-            etlDocument.getDocument().metadata().put("sumarized", sumarized);
-            if (AppStore.getInstance().isDebugAll()) {
-                LoggerHelper.logger.info("Document " + rawDocuments.indexOf(etlDocument) + ":");
-                LoggerHelper.logger.info(sumarized);
+            }));
+        }
+
+        List<ETLDocument> validDocs = new ArrayList<>();
+        for (Future<Integer> future : futures) {
+            try {
+                Integer idx = future.get();
+                if (idx != null) {
+                    validDocs.add(rawDocuments.get(idx));
+                }
+            } catch (ExecutionException e) {
+                LoggerHelper.logger.error("Future execution error: " + e.getMessage(), e);
             }
         }
-        validatedDocuments = rawDocuments.stream().filter(d -> d.getDocument().metadata().containsKey("sumarized"))
-                .toList();
+
+        etlProcessors.shutdown();
+        etlProcessors.awaitTermination(1, TimeUnit.HOURS);
+
+        validatedDocuments = validDocs;
         LoggerHelper.logger.info("Number of validated documents: " + validatedDocuments.size());
+        long endValidationTime = System.currentTimeMillis();
+        LoggerHelper.logger.info("Validation and summarization time: "
+                + Duration.buildByMilliseconds(endValidationTime - startValidationTime));
     }
 
     /**
@@ -138,28 +190,47 @@ public final class ETLPipeline {
      * @throws Exception If an error occurs while starting the parsing process
      */
     private void parsingProcess() throws Exception {
-        LoggerHelper.logger.info("Starting segmentation and chunking process...");
-        for (var etlDocument : validatedDocuments) {
-            var documentsSegments = DocumentTextExtractor.getSegments(etlDocument.getDocument());
-            LoggerHelper.logger.info("Number of segments found: " + documentsSegments.size());
-            if (AppStore.getInstance().isDebugAll()) {
-                LoggerHelper.logger.info("Document " + rawDocuments.indexOf(etlDocument) + ":");
-                LoggerHelper.logger.info("Segments found:");
-                for (var segment : documentsSegments) {
-                    LoggerHelper.logger.info(segment);
-                }
-            }
-            var parsedResponse = etlAgentParser.executeParsing(documentsSegments);
-            var parsedResponseAsJson = JsonResponseTransformer.parseJson(parsedResponse);
-            LoggerHelper.logger.info("Parsing response to document " + rawDocuments.indexOf(etlDocument) + ":");
-            LoggerHelper.logger.info("Parsed response:" + System.lineSeparator() + parsedResponseAsJson);
-            etlDocument.setParsedResponse(parsedResponseAsJson);
+        long startParsingTime = System.currentTimeMillis();
+        LoggerHelper.logger.info("Starting segmentation and chunking process in parallel...");
+
+        int maxEtlProcessors = AppStore.getStartConfigs().getApp().getMaxETLProcessors();
+        ExecutorService etlProcessors = Executors.newFixedThreadPool(maxEtlProcessors);
+        List<Future<Integer>> futures = new ArrayList<>();
+
+        for (int i = 0; i < validatedDocuments.size(); i++) {
+            final int index = i;
+            ETLDocument etlDocument = validatedDocuments.get(i);
+            futures.add(etlProcessors.submit(() -> {
+                var segments = DocumentTextExtractor.getSegments(etlDocument.getDocument());
+                LoggerHelper.logger.info("[Document " + index + "] Segments: " + segments.size());
+                String parsedResponse = etlAgentParser.executeParsing(segments);
+                String jsonResponse = JsonResponseTransformer.parseJson(parsedResponse);
+                etlDocument.setParsedResponse(jsonResponse);
+                LoggerHelper.logger.info("[Document " + index + "] Parsing completed.");
+                return index;
+            }));
         }
-        LoggerHelper.logger.info("Parsing process finished!");
+
+        // wait for all futures to complete
+        for (Future<Integer> future : futures) {
+            try {
+                future.get();
+            } catch (ExecutionException | InterruptedException e) {
+                LoggerHelper.logger.error("Error in parallel parsing: " + e.getMessage(), e);
+            }
+        }
+
+        etlProcessors.shutdown();
+        etlProcessors.awaitTermination(1, TimeUnit.HOURS);
+
+        LoggerHelper.logger.info("All documents parsed, total: " + validatedDocuments.size());
+        long endParsingTime = System.currentTimeMillis();
+        LoggerHelper.logger.info("Parsing time: " + Duration.buildByMilliseconds(endParsingTime - startParsingTime));
     }
 
     // Test and validate parsing process steps
     public void validateETLWithLocalTests() throws Exception {
+        LoggerHelper.logger.info("Validating parsing process with local tests...");
         for (var etlDocument : validatedDocuments) {
             var response = ETLValidation.validateParsingLocally(etlDocument.getDocument().text(),
                     etlDocument.getJsonSchema(),
@@ -167,14 +238,39 @@ public final class ETLPipeline {
             LoggerHelper.logger.info("Document " + rawDocuments.indexOf(etlDocument) + ":");
             LoggerHelper.logger.info("Validation response:" + System.lineSeparator() + response);
         }
+        LoggerHelper.logger.info("Local validation ended successfully!");
     }
 
-    // Insert all validated and tested data into the database
     /**
+     * Step 6: Insert data into database - This method will insert the data into the
+     * database
      * 
-     * 
-     * 
+     * @throws Exception If an error occurs while inserting the data into the
+     *                   database
      */
+    public void insertETLIntoDatabase() throws Exception {
+        LoggerHelper.logger.info("Inserting data into database...");
+        long startInsertTime = System.currentTimeMillis();
+        for (var etlDocument : validatedDocuments) {
+            try {
+                if (DBHelper.insertParsedDocumentAtDatabase(
+                        AppStore.getInstance().getTableName(),
+                        tableDescription,
+                        etlDocument.getJsonSchema())) {
+                    LoggerHelper.logger
+                            .info("Document " + rawDocuments.indexOf(etlDocument) + " inserted successfully!");
+                } else {
+                    LoggerHelper.logger.error("Error inserting document " + rawDocuments.indexOf(etlDocument) + "!");
+                }
+            } catch (SQLException e) {
+                LoggerHelper.logger
+                        .error("Error inserting document " + rawDocuments.indexOf(etlDocument) + ": " + e.getMessage());
+            }
+        }
+        long endInsertTime = System.currentTimeMillis();
+        LoggerHelper.logger.info("Data inserted into database successfully!");
+        LoggerHelper.logger.info("Insertion time: " + Duration.buildByMilliseconds(endInsertTime - startInsertTime));
+    }
 
     /**
      * Boot the ETL pipeline - This method will boot the ETL pipeline
@@ -196,6 +292,10 @@ public final class ETLPipeline {
         debugETLResults();
         // print tests and validations
         validateETLWithLocalTests();
+        // validateETLWithLocalTests();
+        // validateETLWithLocalTests();
+        // insert data into database
+        insertETLIntoDatabase();
     }
 
     /**
@@ -207,10 +307,16 @@ public final class ETLPipeline {
         LoggerHelper.logger.info("Number of documents found: " + rawDocuments.size());
         LoggerHelper.logger.info("Number of validated documents: " + validatedDocuments.size());
         var etlDuration = Duration.buildByMilliseconds(endExecutionTime - startExecutionTime);
-        LoggerHelper.logger.info("Execution time: " + etlDuration.toString());
         for (var etlDocument : validatedDocuments) {
             LoggerHelper.logger.info("Document " + rawDocuments.indexOf(etlDocument) + ":");
-            LoggerHelper.logger.info(etlDocument);
+            LoggerHelper.logger.info(etlDocument.getParsedResponse());
+        }
+        LoggerHelper.logger.info("Execution time: " + etlDuration.toString());
+        if (AppStore.getInstance().isDebugAll()) {
+            for (var etlDocument : validatedDocuments) {
+                LoggerHelper.logger.info("Document " + rawDocuments.indexOf(etlDocument) + ":");
+                LoggerHelper.logger.info(etlDocument);
+            }
         }
         LoggerHelper.logger.info(
                 "===================================================================================================");
