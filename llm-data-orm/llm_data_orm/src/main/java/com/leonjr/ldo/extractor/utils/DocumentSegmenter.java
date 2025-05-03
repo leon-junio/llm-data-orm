@@ -5,9 +5,7 @@ import java.util.List;
 import dev.langchain4j.data.document.Document;
 import dev.langchain4j.data.document.DocumentSplitter;
 import dev.langchain4j.data.document.splitter.DocumentByLineSplitter;
-import dev.langchain4j.data.document.splitter.DocumentByParagraphSplitter;
 import dev.langchain4j.data.document.splitter.DocumentByRegexSplitter;
-import dev.langchain4j.data.document.splitter.DocumentBySentenceSplitter;
 import dev.langchain4j.data.document.splitter.DocumentSplitters;
 import dev.langchain4j.data.segment.TextSegment;
 
@@ -24,7 +22,7 @@ public class DocumentSegmenter {
         switch (fileType) {
             case "pdf":
             case "docx":
-                splitter = new DocumentByParagraphSplitter(DEFAULT_MAX_SEGMENT_SIZE, MIN_SEGMENT_SIZE);
+                splitter = new DocumentByLineSplitter(LINES_MAX_SEGMENT_SIZE, MIN_SEGMENT_SIZE);
                 break;
             case "csv":
             case "tsv":
@@ -38,7 +36,7 @@ public class DocumentSegmenter {
                 splitter = new DocumentByRegexSplitter("<.*?>", " ", DEFAULT_MAX_SEGMENT_SIZE, MIN_SEGMENT_SIZE);
                 break;
             case "xlsx":
-                splitter = new DocumentByParagraphSplitter(DEFAULT_MAX_SEGMENT_SIZE, MIN_SEGMENT_SIZE);
+                splitter = new DocumentByLineSplitter(DEFAULT_MAX_SEGMENT_SIZE, MIN_SEGMENT_SIZE);
                 break;
             case "md":
                 splitter = DocumentSplitters.recursive(DEFAULT_MAX_SEGMENT_SIZE, MIN_SEGMENT_SIZE);
@@ -51,6 +49,7 @@ public class DocumentSegmenter {
                 return List.of(TextSegment.from(document.text()));
             default:
                 splitter = new DocumentByLineSplitter(DEFAULT_MAX_SEGMENT_SIZE, MIN_SEGMENT_SIZE);
+                break;
         }
         return splitter.split(document);
     }

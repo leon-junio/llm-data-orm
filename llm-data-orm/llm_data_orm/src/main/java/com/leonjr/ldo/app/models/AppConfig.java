@@ -20,6 +20,12 @@ public class AppConfig {
     @NotBlank(message = "MAX executors threads is required - default 10")
     private Integer maxExecutorsThreads = 10;
 
+    @NotBlank(message = "MAX DB insertion chunk size is required - default 100")
+    private Integer maxDBInsertionChunkSize = 100;
+
+    @NotBlank(message = "MAX ETL processors is required - default 4")
+    private Integer maxETLProcessors = 4;
+
     @NotNull(message = "Stop if invalidated document was found when parsing data from documents - default false")
     private boolean stopIfInvalidatedDocument = false;
 }
