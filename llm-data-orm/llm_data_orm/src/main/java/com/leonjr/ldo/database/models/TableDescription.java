@@ -63,6 +63,9 @@ public class TableDescription {
         typeMapping.put("TEXT", "string");
         typeMapping.put("DATE", "string");
         typeMapping.put("TIMESTAMP", "string");
+        typeMapping.put("DATETIME", "string");
+        typeMapping.put("DATE", "string");
+        typeMapping.put("TIME", "string");
 
         return typeMapping.getOrDefault(columnType.toUpperCase(), "string");
     }
