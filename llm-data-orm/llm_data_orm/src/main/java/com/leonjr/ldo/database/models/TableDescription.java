@@ -6,7 +6,6 @@ import java.util.Map;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.google.gson.Gson;
 
 import jakarta.validation.constraints.NotBlank;
@@ -31,43 +30,30 @@ public class TableDescription {
         return sb.toString();
     }
 
-    public JsonNode getJsonSchema() {
-        ObjectMapper mapper = new ObjectMapper();
-        ObjectNode schema = mapper.createObjectNode();
-        ObjectNode properties = mapper.createObjectNode();
-
-        if (columns != null) {
-            for (ColumnDescription column : columns) {
-                ObjectNode fieldSchema = mapper.createObjectNode();
-                fieldSchema.put("type", mapColumnTypeToJsonType(column.getType())); // Método para mapear tipos
-                properties.set(column.getName(), fieldSchema);
-            }
+    private JsonNode convertJsonStringToJsonNode(String jsonString) {
+        ObjectMapper objectMapper = new ObjectMapper();
+        try {
+            return objectMapper.readTree(jsonString);
+        } catch (Exception e) {
+            throw new RuntimeException("Error converting JSON string to JsonNode", e);
         }
-
-        schema.put("type", "object");
-        schema.set("properties", properties);
-        return schema;
     }
 
-    private String mapColumnTypeToJsonType(String columnType) {
-        Map<String, String> typeMapping = new HashMap<>();
-        typeMapping.put("INT", "integer");
-        typeMapping.put("BIGINT", "integer");
-        typeMapping.put("DECIMAL", "number");
-        typeMapping.put("FLOAT", "number");
-        typeMapping.put("DOUBLE", "number");
-        typeMapping.put("BOOLEAN", "boolean");
-        typeMapping.put("CHAR", "string");
-        typeMapping.put("BIT", "boolean");
-        typeMapping.put("VARCHAR", "string");
-        typeMapping.put("TEXT", "string");
-        typeMapping.put("DATE", "string");
-        typeMapping.put("TIMESTAMP", "string");
-        typeMapping.put("DATETIME", "string");
-        typeMapping.put("DATE", "string");
-        typeMapping.put("TIME", "string");
+    public JsonNode getFullJsonSchemaFromToJson() {
+        String json = toJson();
+        return convertJsonStringToJsonNode(json);
+    }
 
-        return typeMapping.getOrDefault(columnType.toUpperCase(), "string");
+    public static boolean checkIfJsonTypeIsValid(JsonNode json, String columnType) {
+        var jsonType = json.getNodeType().name().toLowerCase();
+        Map<String, List<String>> typeMapping = new HashMap<>();
+        typeMapping.put("integer", List.of("INT", "BIGINT"));
+        typeMapping.put("number", List.of("DECIMAL", "FLOAT", "DOUBLE"));
+        typeMapping.put("boolean", List.of("BOOLEAN", "BIT"));
+        typeMapping.put("string", List.of("CHAR", "VARCHAR", "TEXT", "DATE", "TIMESTAMP", "DATETIME",
+                "TIME"));
+
+        return typeMapping.getOrDefault(jsonType, List.of()).contains(columnType.toUpperCase());
     }
 
     /**
