@@ -91,6 +91,10 @@ public final class ETLPipeline {
         long endTime = System.currentTimeMillis();
         LoggerHelper.logger.info("Data extraction time: "
                 + Duration.buildByMilliseconds(endTime - startTime));
+        if (rawDocuments.isEmpty()) {
+            LoggerHelper.logger.warn("No documents to run ETL Process!");
+            throw new Exception("No documents found at the path: " + fileOrFolderPath);
+        }
     }
 
     /**
@@ -117,9 +121,10 @@ public final class ETLPipeline {
      *                   documents or if the document is not related with the table
      *                   selected
      */
-    private void validateAndSummarizeDocuments() throws InterruptedException {
+    private void validateAndSummarizeDocuments() throws InterruptedException, Exception {
         long startValidationTime = System.currentTimeMillis();
         LoggerHelper.logger.info("Validating and summarizing documents in parallel...");
+        validatedDocuments = new ArrayList<>();
 
         int maxEtlProcessors = AppStore.getStartConfigs().getApp().getMaxETLProcessors();
         ExecutorService etlProcessors = Executors.newFixedThreadPool(maxEtlProcessors);
@@ -133,24 +138,20 @@ public final class ETLPipeline {
                 try {
                     String context = DocumentContext.getAllAvailableContextFromDocument(etlDocument.getDocument());
                     String summarized = etlAgentParser.preSummarize(context);
-
-                    if (summarized == null || "INVALID_PARSING".equalsIgnoreCase(summarized.trim())) {
-                        LoggerHelper.logger
-                                .error("[Document " + index + "] INVALID_PARSING: not related to selected table.");
-                        // mark metadata if needed
-                        if (AppStore.getStartConfigs().getApp().isStopIfInvalidatedDocument()) {
-                            LoggerHelper.logger.warn("[Document " + index
-                                    + "] stopIfInvalidatedDocument=true, but continuing processing.");
-                        }
-                        return null;
-                    }
-
                     etlDocument.getDocument().metadata().put("summarized", summarized);
                     if (AppStore.getInstance().isDebugAll()) {
                         LoggerHelper.logger.info("[Document " + index + "] Summarized: " + summarized);
                     }
+                    if (summarized == null || summarized.isEmpty()) {
+                        throw new Exception("Document summarized is null or empty");
+                    }
+                    if (summarized.trim().replace("\n", "").equalsIgnoreCase("INVALID_PARSING")) {
+                        LoggerHelper.logger.error("[Document " + index
+                                + "] Validation error found: Document is not related with the table selected!\nResponse: "
+                                + summarized);
+                        return null;
+                    }
                     return index;
-
                 } catch (Exception ex) {
                     LoggerHelper.logger.error("[Document " + index + "] Error during summarization: " + ex.getMessage(),
                             ex);
@@ -164,7 +165,10 @@ public final class ETLPipeline {
             try {
                 Integer idx = future.get();
                 if (idx != null) {
-                    validDocs.add(rawDocuments.get(idx));
+                    var rawDoc = rawDocuments.get(idx);
+                    validDocs.add(rawDoc);
+                } else {
+                    LoggerHelper.logger.warn("Document invalidated found!");
                 }
             } catch (ExecutionException e) {
                 LoggerHelper.logger.error("Future execution error: " + e.getMessage(), e);
@@ -174,8 +178,19 @@ public final class ETLPipeline {
         etlProcessors.shutdown();
         etlProcessors.awaitTermination(1, TimeUnit.HOURS);
 
-        validatedDocuments = validDocs;
+        validatedDocuments.addAll(validDocs);
+
         LoggerHelper.logger.info("Number of validated documents: " + validatedDocuments.size());
+        LoggerHelper.logger.info("Number of invalid documents: " + (rawDocuments.size() - validatedDocuments.size()));
+
+        if (AppStore.getStartConfigs().getApp().isStopIfInvalidatedDocument()
+                && rawDocuments.size() - validatedDocuments.size() > 0) {
+            LoggerHelper.logger.error("There are invalid documents, stopping execution!");
+            throw new Exception(
+                    "Stopping execution due to invalid documents found! Variable stopIfInvalidatedDocument is set to true. Invalid documents: "
+                            + (rawDocuments.size() - validatedDocuments.size()));
+        }
+
         long endValidationTime = System.currentTimeMillis();
         LoggerHelper.logger.info("Validation and summarization time: "
                 + Duration.buildByMilliseconds(endValidationTime - startValidationTime));
@@ -196,6 +211,11 @@ public final class ETLPipeline {
         int maxEtlProcessors = AppStore.getStartConfigs().getApp().getMaxETLProcessors();
         ExecutorService etlProcessors = Executors.newFixedThreadPool(maxEtlProcessors);
         List<Future<Integer>> futures = new ArrayList<>();
+
+        if (validatedDocuments.isEmpty()) {
+            LoggerHelper.logger.warn("No documents to parse!");
+            return;
+        }
 
         for (int i = 0; i < validatedDocuments.size(); i++) {
             final int index = i;
@@ -231,14 +251,30 @@ public final class ETLPipeline {
     // Test and validate parsing process steps
     public void validateETLWithLocalTests() throws Exception {
         LoggerHelper.logger.info("Validating parsing process with local tests...");
+
+        if (validatedDocuments.isEmpty()) {
+            LoggerHelper.logger.warn("No documents to validate!");
+            return;
+        }
+
+        // if we have a test set we will call validateWithTestSet
+        // for (var etlDocument : validatedDocuments) {
+        // var test = testSet.getNext();
+        // var response = ETLValidation.validateParsingWithTestJson(testSet,
+        // etlDocument.getJsonSchema(), tableDescription);
+        // LoggerHelper.logger.info("Document " + rawDocuments.indexOf(etlDocument) +
+        // ":");
+        // LoggerHelper.logger.info("Validation response:" + System.lineSeparator() +
+        // response);
+        // }
+
         for (var etlDocument : validatedDocuments) {
-            var response = ETLValidation.validateParsingLocally(etlDocument.getDocument().text(),
+            var response = ETLValidation.validateParsingLocally(
                     etlDocument.getJsonSchema(),
-                    tableDescription, etlDocument.getParsedResponse());
+                    tableDescription);
             LoggerHelper.logger.info("Document " + rawDocuments.indexOf(etlDocument) + ":");
             LoggerHelper.logger.info("Validation response:" + System.lineSeparator() + response);
         }
-        LoggerHelper.logger.info("Local validation ended successfully!");
     }
 
     /**
@@ -250,6 +286,10 @@ public final class ETLPipeline {
      */
     public void insertETLIntoDatabase() throws Exception {
         LoggerHelper.logger.info("Inserting data into database...");
+        if (validatedDocuments.isEmpty()) {
+            LoggerHelper.logger.warn("No documents to insert!");
+            return;
+        }
         long startInsertTime = System.currentTimeMillis();
         for (var etlDocument : validatedDocuments) {
             try {
