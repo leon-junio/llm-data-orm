@@ -1,120 +1,176 @@
 package com.leonjr.ldo.validation.helper;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
-import opennlp.tools.tokenize.SimpleTokenizer;
+import org.apache.commons.lang3.tuple.Pair;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.leonjr.ldo.database.models.TableDescription;
 
 public final class LocalHelper {
-    public static double calculateEntropy(String text, JsonNode json) {
-        Map<String, Integer> textTermFrequency = calculateTermFrequency(text);
-        Map<String, Integer> jsonTermFrequency = calculateTermFrequency(json.toString());
 
-        double entropy = 0.0;
-        double epsilon = 1e-10; // Para evitar log(0)
-
-        int textLength = text.length();
-        int jsonLength = json.toString().length();
-
-        for (String term : textTermFrequency.keySet()) {
-            double p = textTermFrequency.get(term) / (double) textLength;
-            double q = jsonTermFrequency.getOrDefault(term, 0) / (double) jsonLength + epsilon; // Evita 0
-
-            entropy += p * Math.log(p / q);
+    public static Set<String> flattenJson(JsonNode node, String prefix) {
+        Set<String> result = new HashSet<>();
+        if (node.isObject()) {
+            node.fieldNames().forEachRemaining(field -> {
+                result.addAll(flattenJson(node.get(field), prefix + "." + field));
+            });
+        } else if (node.isArray()) {
+            int index = 0;
+            for (JsonNode item : node) {
+                result.addAll(flattenJson(item, prefix + "[" + index + "]"));
+                index++;
+            }
+        } else {
+            result.add(prefix + "=" + node.asText());
         }
-
-        return -entropy; // A entropia é sempre positiva
+        return result;
     }
 
-    public static Set<String> checkMandatoryFields(JsonNode json, TableDescription tableDescription) {
-        Set<String> missingFields = new HashSet<>();
-        JsonNode schema = tableDescription.getJsonSchema();
-        JsonNode requiredFields = schema.get("required");
-        if (requiredFields != null) {
-            requiredFields.forEach(field -> {
-                if (json.get(field.asText()) == null) {
-                    missingFields.add(field.asText());
+    public static double jaccardSimilarity(JsonNode testJson, JsonNode actualJson) {
+        Set<String> testFlatten = flattenJson(testJson, "");
+        Set<String> actualFlatten = flattenJson(actualJson, "");
+
+        Set<String> intersection = new HashSet<>(testFlatten);
+        intersection.retainAll(actualFlatten);
+        Set<String> union = new HashSet<>(testFlatten);
+        union.addAll(actualFlatten);
+        return (double) intersection.size() / union.size();
+    }
+
+    public static Map<String, Integer> precisionRecallF1(JsonNode testJson, JsonNode actualJson) {
+        Set<String> expected = flattenJson(testJson, "");
+        Set<String> actual = flattenJson(actualJson, "");
+
+        Set<String> tp = new HashSet<>(actual);
+        tp.retainAll(expected);
+
+        Set<String> fp = new HashSet<>(actual);
+        fp.removeAll(expected);
+
+        Set<String> fn = new HashSet<>(expected);
+        fn.removeAll(actual);
+
+        int truePos = tp.size();
+        int falsePos = fp.size();
+        int falseNeg = fn.size();
+
+        return Map.of(
+                "TP", truePos,
+                "FP", falsePos,
+                "FN", falseNeg);
+    }
+
+    public static List<String> checkDataTypes(JsonNode dataJson, JsonNode tableStructure) {
+        List<String> mismatches = new ArrayList<>();
+        for (JsonNode field : tableStructure) {
+            String name = field.get("name").asText();
+            String expectedType = field.get("type").asText();
+            JsonNode value = dataJson.get(name);
+            if (value != null) {
+                boolean typeMismatch = switch (expectedType) {
+                    case "INT" -> !value.isInt();
+                    case "STRING" -> !value.isTextual();
+                    case "BOOLEAN" -> !value.isBoolean();
+                    case "FLOAT" -> !value.isFloatingPointNumber();
+                    default -> false;
+                };
+                if (typeMismatch) {
+                    mismatches.add(name + " has type " + value.getNodeType() + ", expected " + expectedType);
                 }
-            });
+            }
         }
+        return mismatches;
+    }
+
+    public static List<String> checkMandatoryFields(JsonNode dataJsonArray, JsonNode tableStructure) {
+        List<String> missingFields = new ArrayList<>();
+
+        if (!dataJsonArray.isArray()) {
+            throw new IllegalArgumentException("Expected an array of data rows.");
+        }
+
+        int index = 0;
+        for (JsonNode dataItem : dataJsonArray) {
+            for (JsonNode field : tableStructure) {
+                String fieldName = field.get("name").asText();
+                boolean nullable = field.get("nullable").asBoolean();
+                String autoIncrement = field.has("autoIncrement") ? field.get("autoIncrement").asText() : "NO";
+                boolean hasDefault = field.has("defaultValue") && !field.get("defaultValue").isNull();
+
+                // Pular campos com autoincremento ou valor default
+                if ("YES".equalsIgnoreCase(autoIncrement) || hasDefault) {
+                    continue;
+                }
+
+                // Checa se está ausente OU é nulo (duas condições diferentes!)
+                if (!nullable && (!dataItem.has(fieldName) || dataItem.get(fieldName).isNull())) {
+                    missingFields.add("Row " + index + ": missing mandatory field '" + fieldName + "'");
+                }
+            }
+            index++;
+        }
+
         return missingFields;
     }
 
-    public static Map<String, String> checkDataTypes(JsonNode json, TableDescription tableDescription) {
-        Map<String, String> errors = new HashMap<>();
-        JsonNode schema = tableDescription.getJsonSchema();
-
-        JsonNode properties = schema.get("properties");
-        properties.fieldNames().forEachRemaining(field -> {
-            String expectedType = properties.get(field).get("type").asText();
-            JsonNode value = json.get(field);
-            if (value != null && !value.isNull()) {
-                String actualType = value.getNodeType().name().toLowerCase();
-                if (!actualType.equals(expectedType)) {
-                    errors.put(field, "Expected: " + expectedType + ", Actual: " + actualType);
-                }
-            }
-        });
-        return errors;
-    }
-
-    public static Map<String, Double> simpleCalculateTermFrequency(String text) {
-        return Arrays.stream(text.split("\\s+"))
-                .filter(word -> word.length() > 3)
-                .collect(Collectors.groupingBy(
-                        String::toLowerCase,
-                        Collectors.summingDouble(w -> 1.0)));
-    }
-
-    public static Map<String, Integer> calculateTermFrequency(String text) {
-        Map<String, Integer> termFrequency = new HashMap<>();
-        SimpleTokenizer tokenizer = SimpleTokenizer.INSTANCE;
-        String[] tokens = tokenizer.tokenize(text.toLowerCase());
-
-        for (String token : tokens) {
-            termFrequency.put(token, termFrequency.getOrDefault(token, 0) + 1);
+    public static Pair<Double, Double> conformityAndUnknownRate(JsonNode dataJsonArray, JsonNode tableStructure) {
+        if (!dataJsonArray.isArray()) {
+            throw new IllegalArgumentException("Expected dataJson to be an array.");
         }
 
-        return termFrequency;
-    }
+        // Mapeia nome do campo → tipo esperado
+        Map<String, String> tableFieldTypes = new HashMap<>();
+        for (JsonNode column : tableStructure) {
+            String name = column.get("name").asText();
+            String type = column.get("type").asText();
 
-    public static double calculateJaccardSimilarity(String text1, String text2) {
+            String autoIncrement = column.has("autoIncrement") ? column.get("autoIncrement").asText() : "NO";
+            boolean hasDefault = column.has("defaultValue") && !column.get("defaultValue").isNull();
 
-        Set<String> set1 = Arrays.stream(text1.toLowerCase().split("\\s+"))
-                .collect(Collectors.toSet());
-        Set<String> set2 = Arrays.stream(text2.toLowerCase().split("\\s+"))
-                .collect(Collectors.toSet());
+            if ("YES".equalsIgnoreCase(autoIncrement) || hasDefault) {
+                continue; // Ignora campos que não são esperados no JSON
+            }
 
-        Set<String> intersection = new HashSet<>(set1);
-        intersection.retainAll(set2);
+            tableFieldTypes.put(name, type);
+        }
 
-        Set<String> union = new HashSet<>(set1);
-        union.addAll(set2);
+        int totalChecked = 0;
+        int validFields = 0;
+        int unknownFields = 0;
 
-        return union.isEmpty() ? 0.0 : (double) intersection.size() / union.size();
-    }
+        for (JsonNode dataItem : dataJsonArray) {
+            Iterator<Map.Entry<String, JsonNode>> fields = dataItem.fields();
+            while (fields.hasNext()) {
+                Map.Entry<String, JsonNode> entry = fields.next();
+                String fieldName = entry.getKey();
+                JsonNode value = entry.getValue();
 
-    public static double calculatePrecisionRecall(String original, JsonNode json) {
-        Set<String> originalTerms = calculateTermFrequency(original).keySet();
-        Set<String> jsonTerms = calculateTermFrequency(json.toString()).keySet();
+                totalChecked++;
 
-        long truePositives = jsonTerms.stream()
-                .filter(originalTerms::contains)
-                .count();
+                if (tableFieldTypes.containsKey(fieldName)) {
+                    String expectedType = tableFieldTypes.get(fieldName);
+                    if (TableDescription.checkIfJsonTypeIsValid(value, expectedType)) {
+                        validFields++;
+                    } else {
+                        unknownFields++;
+                    }
+                } else {
+                    // Campo não está na tabela
+                    unknownFields++;
+                }
+            }
+        }
 
-        double precision = (double) truePositives / jsonTerms.size();
-        double recall = (double) truePositives / originalTerms.size();
+        double conformity = totalChecked == 0 ? 0.0 : (double) validFields / totalChecked;
+        double unknownRate = totalChecked == 0 ? 0.0 : (double) unknownFields / totalChecked;
 
-        return 2 * (precision * recall) / (precision + recall);
-    }
-
-    public static double calculateF1Score(double precisionRecall, double jaccardSimilarity) {
-        return 2 * (precisionRecall * jaccardSimilarity) / (precisionRecall + jaccardSimilarity);
+        return Pair.of(conformity, unknownRate);
     }
 }
