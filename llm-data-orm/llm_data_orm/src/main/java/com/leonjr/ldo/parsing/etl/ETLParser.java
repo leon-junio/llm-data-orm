@@ -11,8 +11,10 @@ import com.leonjr.ldo.AppStore;
 import com.leonjr.ldo.app.helper.LoggerHelper;
 import com.leonjr.ldo.extractor.utils.DocumentContext;
 import com.leonjr.ldo.parsing.etl.interfaces.ETLProcessor;
+import com.leonjr.ldo.parsing.llm.AiHelper;
 
 import dev.langchain4j.data.message.SystemMessage;
+import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.model.chat.request.ChatRequest;
 import dev.langchain4j.model.chat.request.ResponseFormat;
@@ -39,20 +41,20 @@ public class ETLParser {
                 .responseFormat(jsonFormat)
                 .messages(systemMessage)
                 .build();
-        var response = etlProcessor.preSummarize(chatRequest);
+        var etlSummaryProcessor = AiHelper.buildNewAssistent(AiHelper.getOpenAiSummaryLanguageModel());
+        var response = etlSummaryProcessor.preSummarize(chatRequest);
         return response;
     }
 
     public String processChunkWithAiService(String chunk) throws Exception {
-        SystemMessage systemMessage = SystemMessage.from(
-                "Table_structure" + tableDescription + "\n chunk: "
-                        + chunk);
+        UserMessage userMessage = UserMessage.from(
+                "\"table_structure\":" + tableDescription + "\nchunk: " + chunk);
         ResponseFormat responseFormat = ResponseFormat.builder()
                 .type(ResponseFormatType.JSON)
                 .build();
         ChatRequest chatRequest = ChatRequest.builder()
                 .responseFormat(responseFormat)
-                .messages(systemMessage)
+                .messages(userMessage)
                 .build();
         var response = etlProcessor.process(chatRequest);
         return response;
