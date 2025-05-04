@@ -40,6 +40,9 @@ public class Main implements Callable<Integer> {
     @Option(names = { "-d", "--debug" }, description = "Enable debug mode")
     private boolean debug;
 
+    @Option(names = { "-ts", "--testset" }, description = "Path to the test set")
+    private String testSetPath;
+
     @Override
     public Integer call() {
         if (helpRequested) {
@@ -50,7 +53,7 @@ public class Main implements Callable<Integer> {
             LoggerHelper.logger.error("Configuration file path and table name are required!");
             return 1;
         }
-        boot(configFilePath, tableName, debug);
+        boot(configFilePath, tableName, debug, testSetPath);
         if (exec) {
             return startETLPipeline(fileOrFolderpath);
         }
@@ -63,7 +66,7 @@ public class Main implements Callable<Integer> {
      * @param configFilePath Path to the configuration file
      * @param tableName      Table name to retrieve information
      */
-    public static void boot(String configFilePath, String tableName, boolean debug) {
+    public static void boot(String configFilePath, String tableName, boolean debug, String testSetPath) {
         LoggerHelper.logger.info("Starting application at ", Calendar.getInstance().getTime());
         LoggerHelper.logger.info(AppConsts.APP_ASC_TITLE);
         LoggerHelper.logger.info("Loading configuration file...");
@@ -71,7 +74,7 @@ public class Main implements Callable<Integer> {
             var startupConf = YmlHelper.getStartupConfiguration(configFilePath);
             LoggerHelper.logger.info("Configuration loaded successfully!");
             LoggerHelper.logger.info(startupConf);
-            AppStore.getInstance(startupConf, tableName, debug);
+            AppStore.getInstance(startupConf, tableName, debug, testSetPath);
             DBHelper.startDB(startupConf.getDatabase());
             LoggerHelper.logger.info("Application started successfully!");
         } catch (Exception e) {
