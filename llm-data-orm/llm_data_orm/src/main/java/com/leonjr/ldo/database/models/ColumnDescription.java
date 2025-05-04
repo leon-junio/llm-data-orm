@@ -18,10 +18,17 @@ public class ColumnDescription {
     private boolean nullable;
     @NotBlank(message = "Auto increment cannot be blank")
     private String autoIncrement;
+    private String defaultValue;
 
     public String toString() {
-        return String.format("Name: %s | Type: %s(%d) | Nullable: %s | Auto Increment: %s",
-                name, type, size, (nullable ? "YES" : "NO"), autoIncrement);
+        return String.format(
+                "Name: %s | Type: %s(%d) | Nullable: %s | Auto Increment: %s | Default: %s | Primary Key: %s",
+                name, type, size, (nullable ? "YES" : "NO"), autoIncrement, defaultValue,
+                isPrimaryKey() ? "YES" : "NO");
+    }
+
+    public boolean isPrimaryKey() {
+        return "YES".equalsIgnoreCase(autoIncrement);
     }
 
 }
