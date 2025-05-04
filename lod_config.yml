@@ -1,16 +1,22 @@
 app:
-  stopIfInvalidatedDocument: true
-  maxExecutorsThreads: 16
-  maxETLProcessors: 6
+  stopIfInvalidatedDocument: false
+  maxExecutorsThreads: 10
+  maxETLProcessors: 3
+  # llmType: "GENERIC"
+  # llmConfig:
+  #   genericAi:
+  #     apiKey: "test"
+  #     customUrl: "http://localhost:8000/v1"
+  #     modelName: "gemini-1.5-pro"
   llmType: "OPENAI"
   llmConfig:
     openai:
       apiKey: "test"
       customUrl: "http://localhost:8000/v1"
-      modelName: "GPT_4O_MINI"
+      modelName: "GPT_4O"
 
 database:
-  host: "localhost" # -> Defines the host to be used in the database connection (URL or IP) 
+  host: "localhost" # -> Defines the host to be used in the database connection (URL or IP)
   port: 3306 # -> Defines the port to be used
   user: "root" # -> Defines the user to be used
   password: "" # -> Defines the password to be used
