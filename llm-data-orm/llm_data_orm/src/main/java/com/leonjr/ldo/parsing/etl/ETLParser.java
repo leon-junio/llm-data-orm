@@ -10,7 +10,6 @@ import java.util.concurrent.TimeUnit;
 import com.leonjr.ldo.AppStore;
 import com.leonjr.ldo.app.helper.LoggerHelper;
 import com.leonjr.ldo.extractor.utils.DocumentContext;
-import com.leonjr.ldo.parsing.etl.interfaces.ETLProcessor;
 import com.leonjr.ldo.parsing.llm.AiHelper;
 
 import dev.langchain4j.data.message.SystemMessage;
@@ -29,8 +28,6 @@ public class ETLParser {
 
     @NonNull
     private String tableDescription;
-    @NonNull
-    private ETLProcessor etlProcessor;
 
     public String preSummarize(String documentData) throws Exception {
         SystemMessage systemMessage = SystemMessage.from(
@@ -41,12 +38,13 @@ public class ETLParser {
                 .responseFormat(jsonFormat)
                 .messages(systemMessage)
                 .build();
-        var etlSummaryProcessor = AiHelper.buildNewAssistent(AiHelper.getOpenAiSummaryLanguageModel());
+        var etlSummaryProcessor = AiHelper.buildNewAssistent(AiHelper.getAiSummaryLanguageModel());
         var response = etlSummaryProcessor.preSummarize(chatRequest);
         return response;
     }
 
     public String processChunkWithAiService(String chunk) throws Exception {
+        var etlParserProcessor = AiHelper.buildNewAssistent();
         UserMessage userMessage = UserMessage.from(
                 "\"table_structure\":" + tableDescription + "\nchunk: " + chunk);
         ResponseFormat responseFormat = ResponseFormat.builder()
@@ -56,7 +54,7 @@ public class ETLParser {
                 .responseFormat(responseFormat)
                 .messages(userMessage)
                 .build();
-        var response = etlProcessor.process(chatRequest);
+        var response = etlParserProcessor.process(chatRequest);
         return response;
     }
 
@@ -85,7 +83,11 @@ public class ETLParser {
         finalJson.append("]");
         executor.shutdown();
         executor.awaitTermination(1, TimeUnit.MINUTES);
-        return finalJson.toString();
+        if (AppStore.getInstance().isDebugAll()) {
+            LoggerHelper.logger.info("Final JSON:\n"
+                    + finalJson.toString().replace("```json", "").replace("```", "").replace("`[]`", "[]"));
+        }
+        return finalJson.toString().replace("```json", "").replace("```", "").replace("`[]`", "[]");
     }
 
     public ResponseFormat getJsonResponseFormat() throws Exception {
