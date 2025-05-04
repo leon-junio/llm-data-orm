@@ -13,10 +13,12 @@ public class AppStore {
     private static AppStore instance;
     private String tableName;
     private boolean debugAll;
+    private String testSetPath;
 
-    public static AppStore getInstance(StartupConfiguration startupConfiguration, String tableName, boolean debugAll) {
+    public static AppStore getInstance(StartupConfiguration startupConfiguration, String tableName, boolean debugAll,
+            String testSetPath) {
         if (instance == null) {
-            instance = new AppStore(startupConfiguration, tableName, debugAll);
+            instance = new AppStore(startupConfiguration, tableName, debugAll, testSetPath);
         }
         return instance;
     }
