@@ -6,36 +6,20 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 
 import org.apache.commons.lang3.tuple.Pair;
+import org.apache.commons.text.similarity.LevenshteinDistance;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.leonjr.ldo.database.models.TableDescription;
 
 public final class LocalHelper {
 
-    public static Set<String> flattenJson(JsonNode node, String prefix) {
-        Set<String> result = new HashSet<>();
-        if (node.isObject()) {
-            node.fieldNames().forEachRemaining(field -> {
-                result.addAll(flattenJson(node.get(field), prefix + "." + field));
-            });
-        } else if (node.isArray()) {
-            int index = 0;
-            for (JsonNode item : node) {
-                result.addAll(flattenJson(item, prefix + "[" + index + "]"));
-                index++;
-            }
-        } else {
-            result.add(prefix + "=" + node.asText());
-        }
-        return result;
-    }
-
     public static double jaccardSimilarity(JsonNode testJson, JsonNode actualJson) {
-        Set<String> testFlatten = flattenJson(testJson, "");
-        Set<String> actualFlatten = flattenJson(actualJson, "");
+        Set<String> testFlatten = flattenJsonNormalized(testJson, "");
+        Set<String> actualFlatten = flattenJsonNormalized(actualJson, "");
 
         Set<String> intersection = new HashSet<>(testFlatten);
         intersection.retainAll(actualFlatten);
@@ -44,27 +28,83 @@ public final class LocalHelper {
         return (double) intersection.size() / union.size();
     }
 
+    private static final int STRING_SIMILARITY_THRESHOLD = 80;
+
     public static Map<String, Integer> precisionRecallF1(JsonNode testJson, JsonNode actualJson) {
-        Set<String> expected = flattenJson(testJson, "");
-        Set<String> actual = flattenJson(actualJson, "");
+        Set<String> expected = flattenJsonNormalized(testJson, "");
+        Set<String> actual = flattenJsonNormalized(actualJson, "");
 
-        Set<String> tp = new HashSet<>(actual);
-        tp.retainAll(expected);
+        Set<String> truePositives = new HashSet<>();
+        Set<String> falsePositives = new HashSet<>(actual);
+        Set<String> falseNegatives = new HashSet<>(expected);
 
-        Set<String> fp = new HashSet<>(actual);
-        fp.removeAll(expected);
+        // Avaliar matches com tolerância textual para strings
+        for (String actualEntry : actual) {
+            Optional<String> match = expected.stream()
+                    .filter(expectedEntry -> isSimilar(actualEntry, expectedEntry))
+                    .findFirst();
 
-        Set<String> fn = new HashSet<>(expected);
-        fn.removeAll(actual);
+            if (match.isPresent()) {
+                truePositives.add(actualEntry);
+                falsePositives.remove(actualEntry);
+                falseNegatives.remove(match.get());
+            }
+        }
 
-        int truePos = tp.size();
-        int falsePos = fp.size();
-        int falseNeg = fn.size();
+        int tp = truePositives.size();
+        int fp = falsePositives.size();
+        int fn = falseNegatives.size();
 
         return Map.of(
-                "TP", truePos,
-                "FP", falsePos,
-                "FN", falseNeg);
+                "TP", tp,
+                "FP", fp,
+                "FN", fn);
+    }
+
+    private static boolean isSimilar(String a, String b) {
+        if (a.equals(b))
+            return true;
+
+        if (a.matches(".*\\d.*") || b.matches(".*\\d.*")) {
+            return false;
+        }
+
+        LevenshteinDistance ld = LevenshteinDistance.getDefaultInstance();
+        int distance = ld.apply(a, b);
+        int maxLen = Math.max(a.length(), b.length());
+        int similarityPercent = maxLen == 0 ? 100 : (100 * (maxLen - distance)) / maxLen;
+
+        return similarityPercent >= STRING_SIMILARITY_THRESHOLD;
+    }
+
+    private static Set<String> flattenJsonNormalized(JsonNode node, String prefix) {
+        Set<String> result = new HashSet<>();
+
+        if (node.isArray()) {
+            int index = 0;
+            for (JsonNode element : node) {
+                if (element.isNull()) {
+                    continue;
+                }
+                result.addAll(flattenJsonNormalized(element, prefix + "[" + index + "]."));
+                index++;
+            }
+        } else if (node.isObject()) {
+            Iterator<Map.Entry<String, JsonNode>> fields = node.fields();
+            while (fields.hasNext()) {
+                Map.Entry<String, JsonNode> entry = fields.next();
+                if (entry.getValue().isNull()) {
+                    continue;
+                }
+                String key = prefix + entry.getKey();
+                result.addAll(flattenJsonNormalized(entry.getValue(), key + "."));
+            }
+        } else {
+            String value = node.isNull() ? "null" : node.asText();
+            result.add(prefix.substring(0, prefix.length() - 1) + "=" + value);
+        }
+
+        return result;
     }
 
     public static List<String> checkDataTypes(JsonNode dataJson, JsonNode tableStructure) {
@@ -104,12 +144,10 @@ public final class LocalHelper {
                 String autoIncrement = field.has("autoIncrement") ? field.get("autoIncrement").asText() : "NO";
                 boolean hasDefault = field.has("defaultValue") && !field.get("defaultValue").isNull();
 
-                // Pular campos com autoincremento ou valor default
                 if ("YES".equalsIgnoreCase(autoIncrement) || hasDefault) {
                     continue;
                 }
 
-                // Checa se está ausente OU é nulo (duas condições diferentes!)
                 if (!nullable && (!dataItem.has(fieldName) || dataItem.get(fieldName).isNull())) {
                     missingFields.add("Row " + index + ": missing mandatory field '" + fieldName + "'");
                 }
@@ -135,7 +173,7 @@ public final class LocalHelper {
             boolean hasDefault = column.has("defaultValue") && !column.get("defaultValue").isNull();
 
             if ("YES".equalsIgnoreCase(autoIncrement) || hasDefault) {
-                continue; // Ignora campos que não são esperados no JSON
+                continue;
             }
 
             tableFieldTypes.put(name, type);

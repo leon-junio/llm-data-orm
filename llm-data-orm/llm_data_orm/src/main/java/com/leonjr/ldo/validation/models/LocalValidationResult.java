@@ -6,9 +6,11 @@ import java.util.Map;
 import org.apache.commons.lang3.tuple.Pair;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 @Data
-public class LocalValidationResult {
+@EqualsAndHashCode(callSuper = false)
+public class LocalValidationResult extends LocalSimpleValidationResult {
     private Map<String, Integer> precisionRecallF1;
     private double jaccardSimilarity;
     private List<String> missingMandatoryFields;
