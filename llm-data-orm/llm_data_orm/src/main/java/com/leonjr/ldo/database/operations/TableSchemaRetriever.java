@@ -44,6 +44,7 @@ public class TableSchemaRetriever {
                 int columnSize = columns.getInt("COLUMN_SIZE");
                 boolean isNullable = columns.getInt("NULLABLE") == DatabaseMetaData.columnNullable;
                 String isAutoIncrement = columns.getString("IS_AUTOINCREMENT");
+                String defaultValue = columns.getString("COLUMN_DEF");
 
                 // Handle PostgreSQL auto-increment (SERIAL type)
                 if (dbType == DatabaseType.POSTGRES && "NO".equals(isAutoIncrement)) {
@@ -58,6 +59,7 @@ public class TableSchemaRetriever {
                         .size(columnSize)
                         .nullable(isNullable)
                         .autoIncrement(isAutoIncrement)
+                        .defaultValue(defaultValue)
                         .build();
 
                 parsedColumns.add(columnDescription);
