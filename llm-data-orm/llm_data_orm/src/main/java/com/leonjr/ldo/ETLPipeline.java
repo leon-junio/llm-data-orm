@@ -9,6 +9,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
+import com.fasterxml.jackson.databind.JsonNode;
 import com.leonjr.ldo.app.helper.LoggerHelper;
 import com.leonjr.ldo.database.handler.DBHelper;
 import com.leonjr.ldo.database.models.TableDescription;
@@ -21,6 +22,8 @@ import com.leonjr.ldo.parsing.etl.interfaces.ETLProcessor;
 import com.leonjr.ldo.parsing.etl.models.ETLDocument;
 import com.leonjr.ldo.parsing.llm.AiHelper;
 import com.leonjr.ldo.validation.ETLValidation;
+import com.leonjr.ldo.validation.helper.TestSetHelper;
+import com.leonjr.ldo.validation.models.LocalSimpleValidationResult;
 
 import ch.qos.logback.core.util.Duration;
 import lombok.Data;
@@ -106,8 +109,7 @@ public final class ETLPipeline {
     private void startETLProcessor() throws Exception {
         LoggerHelper.logger.info("Starting ETL Processor...");
         etlAgentProcessor = AiHelper.buildNewAssistent();
-        etlAgentParser = ETLParser.builder().etlProcessor(etlAgentProcessor)
-                .tableDescription(tableDescription.toJson()).build();
+        etlAgentParser = ETLParser.builder().tableDescription(tableDescription.toJson()).build();
         LoggerHelper.logger.info("ETL Processor started successfully!");
     }
 
@@ -257,23 +259,57 @@ public final class ETLPipeline {
             return;
         }
 
-        // if we have a test set we will call validateWithTestSet
-        // for (var etlDocument : validatedDocuments) {
-        // var test = testSet.getNext();
-        // var response = ETLValidation.validateParsingWithTestJson(testSet,
-        // etlDocument.getJsonSchema(), tableDescription);
-        // LoggerHelper.logger.info("Document " + rawDocuments.indexOf(etlDocument) +
-        // ":");
-        // LoggerHelper.logger.info("Validation response:" + System.lineSeparator() +
-        // response);
-        // }
+        LocalSimpleValidationResult validationResult = null;
 
-        for (var etlDocument : validatedDocuments) {
-            var response = ETLValidation.validateParsingLocally(
-                    etlDocument.getJsonSchema(),
-                    tableDescription);
-            LoggerHelper.logger.info("Document " + rawDocuments.indexOf(etlDocument) + ":");
-            LoggerHelper.logger.info("Validation response:" + System.lineSeparator() + response);
+        if (AppStore.getInstance().getTestSetPath() == null
+                || AppStore.getInstance().getTestSetPath().isEmpty()) {
+            LoggerHelper.logger.warn("Not found test Set data, using local validation!");
+            for (var etlDocument : validatedDocuments) {
+                validationResult = ETLValidation.validateParsingLocally(
+                        etlDocument.getJsonSchema(),
+                        tableDescription);
+                LoggerHelper.logger.info("Document " + rawDocuments.indexOf(etlDocument) + ":");
+                LoggerHelper.logger.info("Validation response:" + System.lineSeparator() + validationResult);
+            }
+        } else {
+            JsonNode testSet = TestSetHelper.loadTestSet();
+            // check if have the same size of documents and keys of testSet json array
+            if (testSet.size() != validatedDocuments.size()) {
+                LoggerHelper.logger.error("Test set size is not equal to the number of documents!");
+                throw new Exception("Test set size is not equal to the number of documents!");
+            }
+            int index = 0;
+            for (var etlDocument : validatedDocuments) {
+                var test = testSet.get(index);
+                index++;
+                validationResult = ETLValidation.validateParsingWithTestJson(test,
+                        etlDocument.getJsonSchema(), tableDescription);
+                LoggerHelper.logger.info("Document " + rawDocuments.indexOf(etlDocument) + ":");
+                LoggerHelper.logger.info("Validation response:" + System.lineSeparator() +
+                        validationResult);
+            }
+        }
+
+        // Force execution stop
+        if (validationResult != null) {
+            if (!validationResult.getMissingMandatoryFields().isEmpty()) {
+                throw new Exception("Execution stopped due to missing mandatory fields: "
+                        + validationResult.getMissingMandatoryFields());
+            }
+            if (!validationResult.getDataTypeErrors().isEmpty()) {
+                throw new Exception("Execution stopped due to data type errors: "
+                        + validationResult.getDataTypeErrors());
+            }
+            var conformity = validationResult.getConformityAndUnknownRate().getLeft();
+            var unknownRate = validationResult.getConformityAndUnknownRate().getRight();
+            if (conformity < 0.9) {
+                throw new Exception("Execution stopped due to conformity rate: " + conformity);
+            }
+            if (unknownRate > 0.1) {
+                throw new Exception("Execution stopped due to unknown rate: " + unknownRate);
+            }
+        } else {
+            throw new Exception("Could not found any validation result!");
         }
     }
 
