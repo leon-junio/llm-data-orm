@@ -48,8 +48,25 @@ public class AiHelper {
                 .apiKey(AppStore.getInstance().getLlmConfig().getOpenai().getApiKey())
                 .modelName(AppStore.getInstance().getLlmConfig().getOpenai().getModelName().getModelName())
                 .timeout(Duration.ofMinutes(10))
-                .temperature(0.7)
+                .temperature(0.1) // quase determinístico
+                .topP(0.8) // recorta as caudas
+                .frequencyPenalty(0.4) // evita repetições
+                .presencePenalty(0.4)
                 .maxTokens(4096)
+                .build();
+    }
+
+    public static ChatLanguageModel getOpenAiSummaryLanguageModel() throws Exception {
+        return OpenAiChatModel.builder()
+                .baseUrl(AppStore.getInstance().getLlmConfig().getOpenai().getCustomUrl())
+                .apiKey(AppStore.getInstance().getLlmConfig().getOpenai().getApiKey())
+                .modelName(AppStore.getInstance().getLlmConfig().getOpenai().getModelName().getModelName())
+                .timeout(Duration.ofMinutes(10))
+                .temperature(0.5)
+                .topP(0.9) // recorta as caudas
+                .frequencyPenalty(0.4)
+                .presencePenalty(0.4)
+                .maxTokens(10000)
                 .build();
     }
 
