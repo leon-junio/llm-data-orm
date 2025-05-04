@@ -1,12 +1,9 @@
 package com.leonjr.ldo.database.models;
 
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-
 import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.gson.Gson;
+import com.leonjr.ldo.app.helper.JsonHelper;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.AllArgsConstructor;
@@ -30,18 +27,9 @@ public class TableDescription {
         return sb.toString();
     }
 
-    private JsonNode convertJsonStringToJsonNode(String jsonString) {
-        ObjectMapper objectMapper = new ObjectMapper();
-        try {
-            return objectMapper.readTree(jsonString);
-        } catch (Exception e) {
-            throw new RuntimeException("Error converting JSON string to JsonNode", e);
-        }
-    }
-
     public JsonNode getFullJsonSchemaFromToJson() {
         String json = toJson();
-        return convertJsonStringToJsonNode(json);
+        return JsonHelper.convertJsonStringToJsonNode(json);
     }
 
     public static boolean checkIfJsonTypeIsValid(JsonNode json, String columnType) {
