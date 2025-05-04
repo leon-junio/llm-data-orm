@@ -45,15 +45,22 @@ public class TableDescription {
     }
 
     public static boolean checkIfJsonTypeIsValid(JsonNode json, String columnType) {
-        var jsonType = json.getNodeType().name().toLowerCase();
-        Map<String, List<String>> typeMapping = new HashMap<>();
-        typeMapping.put("integer", List.of("INT", "BIGINT"));
-        typeMapping.put("number", List.of("DECIMAL", "FLOAT", "DOUBLE"));
-        typeMapping.put("boolean", List.of("BOOLEAN", "BIT"));
-        typeMapping.put("string", List.of("CHAR", "VARCHAR", "TEXT", "DATE", "TIMESTAMP", "DATETIME",
-                "TIME"));
+        if (json == null || json.isNull())
+            return false;
 
-        return typeMapping.getOrDefault(jsonType, List.of()).contains(columnType.toUpperCase());
+        columnType = columnType.toUpperCase();
+
+        if (json.isInt() || json.isLong()) {
+            return List.of("INT", "BIGINT").contains(columnType);
+        } else if (json.isFloatingPointNumber()) {
+            return List.of("FLOAT", "DOUBLE", "DECIMAL").contains(columnType);
+        } else if (json.isBoolean()) {
+            return List.of("BOOLEAN", "BIT").contains(columnType);
+        } else if (json.isTextual()) {
+            return List.of("CHAR", "VARCHAR", "TEXT", "DATE", "TIMESTAMP", "DATETIME", "TIME").contains(columnType);
+        }
+
+        return false;
     }
 
     /**
