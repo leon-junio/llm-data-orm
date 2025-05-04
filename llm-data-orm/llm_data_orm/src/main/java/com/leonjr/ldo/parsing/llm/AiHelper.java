@@ -37,6 +37,8 @@ public class AiHelper {
         switch (type) {
             case OPENAI:
                 return getOpenAiChatLanguageModel();
+            case GENERIC:
+                return getGenericChatLanguageModel();
             default:
                 throw new IllegalArgumentException("Unsupported LLM type: " + type);
         }
@@ -48,12 +50,38 @@ public class AiHelper {
                 .apiKey(AppStore.getInstance().getLlmConfig().getOpenai().getApiKey())
                 .modelName(AppStore.getInstance().getLlmConfig().getOpenai().getModelName().getModelName())
                 .timeout(Duration.ofMinutes(10))
-                .temperature(0.1) // quase determinístico
-                .topP(0.8) // recorta as caudas
+                .temperature(0.2) // quase determinístico
+                .topP(0.9) // recorta as caudas
                 .frequencyPenalty(0.4) // evita repetições
                 .presencePenalty(0.4)
-                .maxTokens(4096)
+                .maxTokens(12000)
                 .build();
+    }
+
+    public static ChatLanguageModel getGenericChatLanguageModel() throws Exception {
+        return OpenAiChatModel.builder() // custom route to openAi chat models and local servers
+                .baseUrl(AppStore.getInstance().getLlmConfig().getGenericAi().getCustomUrl())
+                .apiKey(AppStore.getInstance().getLlmConfig().getGenericAi().getApiKey())
+                .modelName(AppStore.getInstance().getLlmConfig().getGenericAi().getModelName())
+                .timeout(Duration.ofMinutes(10))
+                .temperature(0.2) // quase determinístico
+                .topP(0.9) // recorta as caudas
+                .frequencyPenalty(0.4) // evita repetições
+                .presencePenalty(0.4)
+                .maxTokens(12000)
+                .build();
+    }
+
+    public static ChatLanguageModel getAiSummaryLanguageModel() throws Exception {
+        var llmType = AppStore.getStartConfigs().getApp().getLlmType();
+        switch (llmType) {
+            case OPENAI:
+                return getOpenAiSummaryLanguageModel();
+            case GENERIC:
+                return getGenericAiSummaryLanguageModel();
+            default:
+                throw new IllegalArgumentException("Unsupported LLM type: " + llmType);
+        }
     }
 
     public static ChatLanguageModel getOpenAiSummaryLanguageModel() throws Exception {
@@ -61,6 +89,20 @@ public class AiHelper {
                 .baseUrl(AppStore.getInstance().getLlmConfig().getOpenai().getCustomUrl())
                 .apiKey(AppStore.getInstance().getLlmConfig().getOpenai().getApiKey())
                 .modelName(AppStore.getInstance().getLlmConfig().getOpenai().getModelName().getModelName())
+                .timeout(Duration.ofMinutes(10))
+                .temperature(0.5)
+                .topP(0.9) // recorta as caudas
+                .frequencyPenalty(0.4)
+                .presencePenalty(0.4)
+                .maxTokens(10000)
+                .build();
+    }
+
+    public static ChatLanguageModel getGenericAiSummaryLanguageModel() throws Exception {
+        return OpenAiChatModel.builder() // custom route to openAi chat models and local servers
+                .baseUrl(AppStore.getInstance().getLlmConfig().getGenericAi().getCustomUrl())
+                .apiKey(AppStore.getInstance().getLlmConfig().getGenericAi().getApiKey())
+                .modelName(AppStore.getInstance().getLlmConfig().getGenericAi().getModelName())
                 .timeout(Duration.ofMinutes(10))
                 .temperature(0.5)
                 .topP(0.9) // recorta as caudas
