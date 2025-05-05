@@ -53,6 +53,7 @@ public class PromptTexts {
             """;
 
     public static final String PRE_SUMMARIZE = """
+            ROLE: DOCUMENT SUMMARIZER
             You are tasked with summarizing and validate the content of a document to generate its metadata. The document will be parsed to be inserted into a database, and the summary will be used to provide context for the document's content.
             Your summary **must be a single paragraph in English** and should be the **only content** in the response. You also responsible for validating the document's content with the provided table structure (check if the document contains the expected data).
             Pay attention to schema structure in another languages, like Portuguese, Spanish, etc. The schema will be in English, but the text can be in another language. If you find a field that matches the schema but is in another language, you should still extract it. Sometimes in tables or xlsx files
@@ -65,25 +66,27 @@ public class PromptTexts {
             - If the document contains structured data (e.g., tables, lists), mention relevant **columns or fields** explicitly.
             - **DO NOT** add into you summary any of additional text, explanations, or formatting that you generate.
             ### **Handling Missing Information:**
-            - If the document **does not contain extractable content**, return an **single string (`"INVALID_PARSING"`)** **without explanations**. -> You should **not** attempt to summarize the document in this case.
+            - If the document **does not contain extractable content**, return an **single string INVALID_PARSING** **without explanations**. -> You should **not** attempt to summarize the document in this case.
             - An invalid document is a file that does not contain any information related to the table description (pay attention to the schema structure in another language and information inserted inside the text or tables).
             ### **Input Details:**
             You will receive:
             1. **The full text of the document.**
             2. **A description and sumarization of content** containing the expected target columns to extract if document is VALID. The last line of a VALID document should be a phrase containing the CORE CONTENT of the document. This phrase should be used to guide the summary.
-            3. If the document is INVALID, return `INVALID_PARSING`.
-             - ** INVALID DOCUMENTS: **
-             - If the text does not contain any information related to the table description (pay attention to the schema structure in another language and information inserted inside the text or tables). Focus on the CORE CONTENT to check if the document is valid or NOT. NEVER LET INVALID DOCUMENTS PASS.
+            3. If the document is INVALID, return INVALID_PARSING.
             Use this 3 rules of information to generate a **precise** and **useful** summary.
-            # OUTPUT
-                SUMMARY MUST BE A SIMPLE TEXT WITHOUT FULLY DATA, MUST BE A SINGLE/DOUBLE PARAGRAPH.
-                SUMMARY MUST BE A SINGLE STRING WITHOUT MARKDOWN OR FORMATTING.
+            ** INVALID DOCUMENTS: **
+             - If the text does not contain ANY information related to the table description. Focus on the CORE CONTENT to check if the document is valid or NOT. NEVER LET INVALID DOCUMENTS PASS.
+             - Extract the main topic about the document. Check the main topic with main content of the table description. If the document is not related to the table description, return INVALID_PARSING.
+             - Never MARK valid documents as INVALID. Only mark documents that are not related to the table description as INVALID.
+             # OUTPUT
+                SUMMARY MUST BE A SIMPLE TEXT WITHOUT FULLY DATA, IT MUST BE A SINGLE/DOUBLE PARAGRAPH
+                SUMMARY MUST BE A SIMPLE TEXT WITHOUT MARKDOWN OR FORMATTING
+                CORE CONTENT MUST HAVE DATA RELATED TO THE TABLE DESCRIPTION
+                The last line of a VALID document should be a phrase containing the CORE CONTENT of the document
             # EXPLICIT PROHIBITIONS
                 Never add "..." or continuation markers
                 Never reference other chunks' content
-                Never complete partial numbers/words
                 Never assume missing fields exist elsewhere
-            Your output should not contain any markdown or any other formatting. Should be a *plain text*.
             """;
 
     public static final String ETL_PROCESS_IMAGE = """
