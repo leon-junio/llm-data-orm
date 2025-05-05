@@ -61,6 +61,60 @@ public final class LocalHelper {
                 "FN", fn);
     }
 
+    public static Pair<Double, Double> conformityAndUnknownRate(JsonNode dataJsonArray, JsonNode tableStructure) {
+        if (!dataJsonArray.isArray()) {
+            throw new IllegalArgumentException("Expected dataJson to be an array.");
+        }
+
+        // Mapeia nome do campo → tipo esperado
+        Map<String, String> tableFieldTypes = new HashMap<>();
+        for (JsonNode column : tableStructure) {
+            String name = column.get("name").asText();
+            String type = column.get("type").asText();
+
+            String autoIncrement = column.has("autoIncrement") ? column.get("autoIncrement").asText() : "NO";
+            boolean hasDefault = column.has("defaultValue") && !column.get("defaultValue").isNull();
+
+            if ("YES".equalsIgnoreCase(autoIncrement) || hasDefault) {
+                continue;
+            }
+
+            tableFieldTypes.put(name, type);
+        }
+
+        int totalChecked = 0;
+        int validFields = 0;
+        int unknownFields = 0;
+
+        for (JsonNode dataItem : dataJsonArray) {
+            Iterator<Map.Entry<String, JsonNode>> fields = dataItem.fields();
+            while (fields.hasNext()) {
+                Map.Entry<String, JsonNode> entry = fields.next();
+                String fieldName = entry.getKey();
+                JsonNode value = entry.getValue();
+
+                totalChecked++;
+
+                if (tableFieldTypes.containsKey(fieldName)) {
+                    String expectedType = tableFieldTypes.get(fieldName);
+                    if (TableDescription.checkIfJsonTypeIsValid(value, expectedType)) {
+                        validFields++;
+                    } else {
+                        unknownFields++;
+                    }
+                } else {
+                    // Campo não está na tabela
+                    unknownFields++;
+                }
+            }
+        }
+
+        double conformity = totalChecked == 0 ? 0.0 : (double) validFields / totalChecked;
+        double unknownRate = totalChecked == 0 ? 0.0 : (double) unknownFields / totalChecked;
+
+        return Pair.of(conformity, unknownRate);
+    }
+
     private static boolean isSimilar(String a, String b) {
         if (a.equals(b))
             return true;
@@ -156,59 +210,5 @@ public final class LocalHelper {
         }
 
         return missingFields;
-    }
-
-    public static Pair<Double, Double> conformityAndUnknownRate(JsonNode dataJsonArray, JsonNode tableStructure) {
-        if (!dataJsonArray.isArray()) {
-            throw new IllegalArgumentException("Expected dataJson to be an array.");
-        }
-
-        // Mapeia nome do campo → tipo esperado
-        Map<String, String> tableFieldTypes = new HashMap<>();
-        for (JsonNode column : tableStructure) {
-            String name = column.get("name").asText();
-            String type = column.get("type").asText();
-
-            String autoIncrement = column.has("autoIncrement") ? column.get("autoIncrement").asText() : "NO";
-            boolean hasDefault = column.has("defaultValue") && !column.get("defaultValue").isNull();
-
-            if ("YES".equalsIgnoreCase(autoIncrement) || hasDefault) {
-                continue;
-            }
-
-            tableFieldTypes.put(name, type);
-        }
-
-        int totalChecked = 0;
-        int validFields = 0;
-        int unknownFields = 0;
-
-        for (JsonNode dataItem : dataJsonArray) {
-            Iterator<Map.Entry<String, JsonNode>> fields = dataItem.fields();
-            while (fields.hasNext()) {
-                Map.Entry<String, JsonNode> entry = fields.next();
-                String fieldName = entry.getKey();
-                JsonNode value = entry.getValue();
-
-                totalChecked++;
-
-                if (tableFieldTypes.containsKey(fieldName)) {
-                    String expectedType = tableFieldTypes.get(fieldName);
-                    if (TableDescription.checkIfJsonTypeIsValid(value, expectedType)) {
-                        validFields++;
-                    } else {
-                        unknownFields++;
-                    }
-                } else {
-                    // Campo não está na tabela
-                    unknownFields++;
-                }
-            }
-        }
-
-        double conformity = totalChecked == 0 ? 0.0 : (double) validFields / totalChecked;
-        double unknownRate = totalChecked == 0 ? 0.0 : (double) unknownFields / totalChecked;
-
-        return Pair.of(conformity, unknownRate);
     }
 }
