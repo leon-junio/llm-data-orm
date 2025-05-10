@@ -1,7 +1,7 @@
 app:
   stopIfInvalidatedDocument: false
   maxExecutorsThreads: 16
-  maxETLProcessors: 3
+  maxETLProcessors: 4
   llmType: "GENERIC"
   llmConfig:
     genericAi:
