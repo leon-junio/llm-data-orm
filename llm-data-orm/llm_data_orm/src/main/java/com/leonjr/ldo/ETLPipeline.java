@@ -274,9 +274,9 @@ public final class ETLPipeline {
         } else {
             JsonNode testSet = TestSetHelper.loadTestSet();
             // check if have the same size of documents and keys of testSet json array
-            if (testSet.size() != validatedDocuments.size()) {
-                LoggerHelper.logger.error("Test set size is not equal to the number of documents!");
-                throw new Exception("Test set size is not equal to the number of documents!");
+            if (validatedDocuments.size()>testSet.size()) {
+                LoggerHelper.logger.error("Test set size is less than the number of documents!");
+                throw new Exception("Test set size is less than the number of documents!");
             }
             int index = 0;
             for (var etlDocument : validatedDocuments) {
