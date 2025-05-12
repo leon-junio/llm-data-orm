@@ -6,8 +6,14 @@ import com.leonjr.ldo.AppStore;
 import com.leonjr.ldo.app.helper.LoggerHelper;
 import com.leonjr.ldo.database.models.ColumnDescription;
 import java.sql.Connection;
+import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.sql.Time;
+import java.sql.Timestamp;
+import java.time.OffsetDateTime;
+import java.time.format.DateTimeFormatter;
+import java.time.format.DateTimeParseException;
 import java.util.List;
 
 public class JSONBatchInserter {
@@ -25,7 +31,7 @@ public class JSONBatchInserter {
             Connection conn,
             TableDescription tableDesc,
             JsonNode jsonArray,
-            int chunkSize) throws SQLException {
+            int chunkSize) throws SQLException, Exception {
         boolean anyInserted = false;
         String tableName = tableDesc.getName();
         List<ColumnDescription> cols = tableDesc.getColumns();
@@ -58,6 +64,7 @@ public class JSONBatchInserter {
                 // Para cada coluna, extrai o valor do JSON e seta no PreparedStatement
                 for (int c = 0; c < cols.size(); c++) {
                     String colName = cols.get(c).getName();
+                    String colType = cols.get(c).getType();
                     JsonNode value = row.get(colName);
                     if (value == null || value.isNull()) {
                         ps.setObject(c + 1, null);
@@ -69,6 +76,26 @@ public class JSONBatchInserter {
                         ps.setDouble(c + 1, value.doubleValue());
                     } else if (value.isBoolean()) {
                         ps.setBoolean(c + 1, value.booleanValue());
+                    }
+                    else if (value.isTextual() && isIso8601(value.asText())) {
+                        OffsetDateTime odt = OffsetDateTime.parse(value.asText());
+                        if (colType.equals("DATE")) {
+                            ps.setDate(c + 1, Date.valueOf(odt.toLocalDate()));
+                        } else if (colType.equals("TIME")) {
+                            ps.setTime(c + 1, Time.valueOf(odt.toLocalTime().withNano(0)));
+                        } else if (colType.equals("TIMESTAMP")) {
+                            ps.setTimestamp(c + 1, Timestamp.from(odt.toInstant()));
+                        } else {
+                            ps.setString(c + 1, value.asText());
+                        }
+                    } else if (value.isTextual()) {
+                        ps.setString(c + 1, value.asText());
+                    } else if (value.isBinary()) {
+                        ps.setBytes(c + 1, value.binaryValue());
+                    } else if (value.isArray() || value.isObject()) {
+                        ps.setObject(c + 1, value.toString());
+                    } else if (value.isBigInteger() || value.isBigDecimal()) {
+                        ps.setBigDecimal(c + 1, value.decimalValue());
                     } else {
                         ps.setString(c + 1, value.asText());
                     }
@@ -96,5 +123,14 @@ public class JSONBatchInserter {
         }
 
         return anyInserted;
+    }
+
+    private static boolean isIso8601(String text) {
+        try {
+            OffsetDateTime.parse(text, DateTimeFormatter.ISO_OFFSET_DATE_TIME);
+            return true;
+        } catch (DateTimeParseException e) {
+            return false;
+        }
     }
 }
