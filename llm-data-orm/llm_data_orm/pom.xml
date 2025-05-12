@@ -45,6 +45,13 @@
             <version>2.12.1</version>
         </dependency>
 
+        <!-- Guava -->
+        <dependency>
+            <groupId>com.google.guava</groupId>
+            <artifactId>guava</artifactId>
+            <version>33.4.8-jre</version>
+        </dependency>
+
         <!-- JUNIT tests -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
