@@ -60,6 +60,7 @@ public class PromptTexts {
             you must use the full text to validate the data and extract the correct information.
             You will receive a **description of the content/table struct** and the **full text of the document**. Your answer should not contain the original table struct or any data about how the original table is structured.
             Provide information of how document is structured, like tables, lists, etc. If the document is not valid (Empty text, language undefined or text not related to table description), return `"INVALID_PARSING"`.
+            If you find main topic as a main title, name, description, guide or label you should use this to provide a overall main topic of the document.
             ### **Guidelines:**
             - Provide a **concise and informative summary** of the document’s content.
             - Focus on **key details**, such as **table structures, titles, and descriptions**. Here you must verify if the document contains the expected data in subtexts, tables or hided into the text.
