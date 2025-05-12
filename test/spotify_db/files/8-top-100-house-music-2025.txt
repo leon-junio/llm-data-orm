@@ -34,7 +34,6 @@ Song	Artist	Popularity	Album	Album Date	Time	Added at	Spotify Track Id
  Dreamin (feat. Daya)	Dom Dolla,Daya	78	Dreamin (feat. Daya)	2025-02-07	02:51	2025-02-07	6oWmcKVK6atTCoWVYTdSg1
 
  Gabriel	Hydawai,CMC$,Benji	68	Gabriel	2024-06-28	03:17	2024-06-28	4Qo9UFzbsp5avmUs6Okpl6
- Where You Are	John Summit,HAYLA	72	Where You Are	2023-03-03	03:56	2023-11-05	4qDpLaFGf5ampf2DXD2TMA
 
  girl$	Dom Dolla	73	girl$	2024-06-07	03:29	2024-08-10	46N3FCKFABRjNoNBVq4osr
 
