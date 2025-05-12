@@ -1,5 +1,6 @@
 package com.leonjr.ldo;
 
+import java.io.File;
 import java.util.Calendar;
 import java.util.concurrent.Callable;
 
@@ -18,9 +19,6 @@ public class Main implements Callable<Integer> {
         DBHelper.shutdown();
         System.exit(exitCode);
     }
-
-    // Test parameters:
-    // -c "./lod_config.yml" -f "./test/test_text_file.docx" -e -t "test"
 
     @Option(names = { "-c", "--config" }, description = "Path to the configuration file")
     private String configFilePath;
@@ -72,6 +70,7 @@ public class Main implements Callable<Integer> {
         LoggerHelper.logger.info("Loading configuration file...");
         try {
             var startupConf = YmlHelper.getStartupConfiguration(configFilePath);
+            validateTestSetPath(testSetPath);
             LoggerHelper.logger.info("Configuration loaded successfully!");
             LoggerHelper.logger.info(startupConf);
             AppStore.getInstance(startupConf, tableName, debug, testSetPath);
@@ -100,6 +99,22 @@ public class Main implements Callable<Integer> {
             LoggerHelper.logger.error("ETL Pipeline failed to execute: " + e.getMessage());
             LoggerHelper.logger.catching(e);
             return 1;
+        }
+    }
+
+        /**
+     * Validate the test set path.
+     * 
+     * @throws IllegalArgumentException if the test set path is not set or does not
+     *                                  exist
+     */
+    private static void validateTestSetPath(String testSetPath) throws IllegalArgumentException {
+        if (testSetPath == null || testSetPath.isEmpty()) {
+            throw new IllegalArgumentException("Test set path is not set in the configuration.");
+        }
+        var file = new File(testSetPath);
+        if (!file.exists()) {
+            throw new IllegalArgumentException("Test set path does not exist: " + testSetPath);
         }
     }
 }
