@@ -24,7 +24,7 @@ public class TableSchemaRetriever {
      *                      information
      */
     public static TableDescription getTableInfo(Connection conn, String tableName, DatabaseType dbType)
-            throws SQLException {
+            throws SQLException, Exception {
         DatabaseMetaData metaData = conn.getMetaData();
 
         LoggerHelper.logger.info("Retrieving columns for table: " + tableName);
@@ -67,6 +67,10 @@ public class TableSchemaRetriever {
         }
 
         LoggerHelper.logger.info(parsedColumns.size() + " columns found to " + tableName);
+
+        if (parsedColumns.isEmpty()) {
+            throw new RuntimeException("No columns found for table: " + tableName);
+        }
 
         return TableDescription.builder()
                 .name(tableName)
