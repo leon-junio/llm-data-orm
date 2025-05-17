@@ -27,6 +27,8 @@ public class DatabaseConfig {
     private DatabaseType databaseType;
     @Null(message = "The schema is not required for MySQL")
     private String schema;
+    @NotBlank(message = "Truncate table before insert is required")
+    private boolean truncateTableBeforeInsert;
 
     public String getJdbcUrl() {
         return String.format("jdbc:%s://%s:%d/%s", databaseType.toString().toLowerCase(), host, port, databaseName);

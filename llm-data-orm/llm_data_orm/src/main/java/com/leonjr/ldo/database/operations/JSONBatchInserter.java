@@ -36,6 +36,10 @@ public class JSONBatchInserter {
         String tableName = tableDesc.getName();
         List<ColumnDescription> cols = tableDesc.getColumns();
 
+        if (AppStore.getInstance().getStartupConfiguration().getDatabase().isTruncateTableBeforeInsert()) {
+            truncateTableBeforeInsert(conn, tableName);
+        }
+
         // Monta a parte fixa do INSERT: "INSERT INTO table (col1, col2, ...) VALUES "
         StringBuilder sql = new StringBuilder("INSERT INTO ")
                 .append(tableName).append(" (");
@@ -76,8 +80,7 @@ public class JSONBatchInserter {
                         ps.setDouble(c + 1, value.doubleValue());
                     } else if (value.isBoolean()) {
                         ps.setBoolean(c + 1, value.booleanValue());
-                    }
-                    else if (value.isTextual() && isIso8601(value.asText())) {
+                    } else if (value.isTextual() && isIso8601(value.asText())) {
                         OffsetDateTime odt = OffsetDateTime.parse(value.asText());
                         if (colType.equals("DATE")) {
                             ps.setDate(c + 1, Date.valueOf(odt.toLocalDate()));
@@ -131,6 +134,13 @@ public class JSONBatchInserter {
             return true;
         } catch (DateTimeParseException e) {
             return false;
+        }
+    }
+
+    private static boolean truncateTableBeforeInsert(Connection conn, String tableName) throws SQLException {
+        String sql = "TRUNCATE TABLE " + tableName;
+        try (PreparedStatement ps = conn.prepareStatement(sql)) {
+            return ps.executeUpdate() > 0;
         }
     }
 }
