@@ -30,7 +30,7 @@ public class DocumentSegmenter {
         switch (fileType) {
             case "pdf":
             case "docx":
-                splitter = new DocumentByLineSplitter(LINES_MAX_SEGMENT_SIZE, MIN_SEGMENT_SIZE);
+                splitter = new DocumentByLineSplitter(2048, 0);
                 break;
             case "csv":
             case "tsv":
@@ -56,7 +56,7 @@ public class DocumentSegmenter {
             case "webp":
                 return List.of(TextSegment.from(document.text()));
             default:
-                splitter = new DocumentByLineSplitter(DEFAULT_MAX_SEGMENT_SIZE, MIN_SEGMENT_SIZE);
+                splitter = new DocumentByLineSplitter(2048, 0);;
                 break;
         }
         var segments = splitter.split(document);

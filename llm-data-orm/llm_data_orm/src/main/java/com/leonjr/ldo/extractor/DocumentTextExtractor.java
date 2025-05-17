@@ -14,7 +14,9 @@ import dev.langchain4j.data.document.parser.apache.tika.ApacheTikaDocumentParser
 import org.apache.tika.parser.AutoDetectParser;
 
 import com.leonjr.ldo.extractor.utils.DocumentSegmenter;
+import com.leonjr.ldo.extractor.utils.HtmlCleaner;
 import com.leonjr.ldo.extractor.utils.ImageUtils;
+import com.leonjr.ldo.extractor.utils.TextCleaner;
 import com.leonjr.ldo.parsing.llm.AiHelper;
 
 import dev.langchain4j.data.segment.TextSegment;
@@ -32,7 +34,19 @@ public final class DocumentTextExtractor {
                 var doc = ImageUtils.createDocumentFromImagePath(path, imageSummary);
                 return Arrays.asList(doc);
             }
-            return Arrays.asList(FileSystemDocumentLoader.loadDocument(path, parser));
+            String fileType = path.substring(path.lastIndexOf('.') + 1).toLowerCase();
+            var rawDoc = FileSystemDocumentLoader.loadDocument(path, parser);
+            String cleanedText = rawDoc.text();
+            if (fileType.equals("html") || fileType.equals("htm")) {
+                System.out.println("cleanedText: " + cleanedText);
+                cleanedText = HtmlCleaner.cleanHtml(rawDoc.text());
+                System.out.println("cleanedText: " + cleanedText);
+            } else {
+                cleanedText = TextCleaner.cleanText(cleanedText);
+            }
+            System.out.println("cleanedText3: " + cleanedText);
+            Document cleanedDoc = Document.document(cleanedText, rawDoc.metadata());
+            return Arrays.asList(cleanedDoc);
         }
     }
 
