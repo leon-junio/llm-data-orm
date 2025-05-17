@@ -13,7 +13,7 @@ public class JsonHelper {
      * @param jsonString the JSON string to convert
      * @return the JsonNode object
      */
-    public static JsonNode convertJsonStringToJsonNode(String jsonString) {
+    public static JsonNode convertJsonStringToJsonNode(String jsonString) throws Exception {
         ObjectMapper objectMapper = new ObjectMapper();
         try {
             return objectMapper.readTree(jsonString);

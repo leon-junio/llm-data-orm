@@ -70,7 +70,9 @@ public class Main implements Callable<Integer> {
         LoggerHelper.logger.info("Loading configuration file...");
         try {
             var startupConf = YmlHelper.getStartupConfiguration(configFilePath);
-            validateTestSetPath(testSetPath);
+            if (testSetPath != null) {
+                validateTestSetPath(testSetPath);
+            }
             LoggerHelper.logger.info("Configuration loaded successfully!");
             LoggerHelper.logger.info(startupConf);
             AppStore.getInstance(startupConf, tableName, debug, testSetPath);
@@ -102,7 +104,7 @@ public class Main implements Callable<Integer> {
         }
     }
 
-        /**
+    /**
      * Validate the test set path.
      * 
      * @throws IllegalArgumentException if the test set path is not set or does not
