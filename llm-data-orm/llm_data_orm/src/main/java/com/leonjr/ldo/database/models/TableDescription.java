@@ -27,7 +27,7 @@ public class TableDescription {
         return sb.toString();
     }
 
-    public JsonNode getFullJsonSchemaFromToJson() {
+    public JsonNode getFullJsonSchemaFromToJson() throws Exception{
         String json = toJson();
         return JsonHelper.convertJsonStringToJsonNode(json);
     }

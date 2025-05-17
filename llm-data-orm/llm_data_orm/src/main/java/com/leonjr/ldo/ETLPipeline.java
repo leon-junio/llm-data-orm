@@ -260,6 +260,7 @@ public final class ETLPipeline {
         }
 
         LocalSimpleValidationResult validationResult = null;
+        List<LocalSimpleValidationResult> testSetResults = new ArrayList<>();
 
         if (AppStore.getInstance().getTestSetPath() == null
                 || AppStore.getInstance().getTestSetPath().isEmpty()) {
@@ -274,7 +275,7 @@ public final class ETLPipeline {
         } else {
             JsonNode testSet = TestSetHelper.loadTestSet();
             // check if have the same size of documents and keys of testSet json array
-            if (validatedDocuments.size()>testSet.size()) {
+            if (validatedDocuments.size() > testSet.size()) {
                 LoggerHelper.logger.error("Test set size is less than the number of documents!");
                 throw new Exception("Test set size is less than the number of documents!");
             }
@@ -383,10 +384,6 @@ public final class ETLPipeline {
         LoggerHelper.logger.info("Number of documents found: " + rawDocuments.size());
         LoggerHelper.logger.info("Number of validated documents: " + validatedDocuments.size());
         var etlDuration = Duration.buildByMilliseconds(endExecutionTime - startExecutionTime);
-        for (var etlDocument : validatedDocuments) {
-            LoggerHelper.logger.info("Document " + rawDocuments.indexOf(etlDocument) + ":");
-            LoggerHelper.logger.info(etlDocument.getParsedResponse());
-        }
         LoggerHelper.logger.info("Execution time: " + etlDuration.toString());
         if (AppStore.getInstance().isDebugAll()) {
             for (var etlDocument : validatedDocuments) {

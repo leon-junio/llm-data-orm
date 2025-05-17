@@ -19,7 +19,7 @@ public class ETLValidation {
      * @return A LocalValidationResult object containing the validation results.
      */
     public static LocalValidationResult validateParsingWithTestJson(JsonNode targetJson, JsonNode parsedJson,
-            TableDescription tableDescription) {
+            TableDescription tableDescription) throws Exception {
         LocalValidationResult result = new LocalValidationResult();
         var missingMandatoryFields = LocalHelper.checkMandatoryFields(parsedJson,
                 tableDescription.getFullJsonSchemaFromToJson().get("columns"));
@@ -47,7 +47,7 @@ public class ETLValidation {
      * @return A LocalValidationResult object containing the validation results.
      */
     public static LocalSimpleValidationResult validateParsingLocally(JsonNode parsedJson,
-            TableDescription tableDescription) {
+            TableDescription tableDescription) throws Exception {
         LocalSimpleValidationResult result = new LocalSimpleValidationResult();
         var missingMandatoryFields = LocalHelper.checkMandatoryFields(parsedJson,
                 tableDescription.getFullJsonSchemaFromToJson().get("columns"));
