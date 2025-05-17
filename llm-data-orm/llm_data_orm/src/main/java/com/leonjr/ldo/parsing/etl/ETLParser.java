@@ -10,11 +10,11 @@ import java.util.concurrent.TimeUnit;
 
 import com.google.common.util.concurrent.RateLimiter;
 import com.leonjr.ldo.AppStore;
+import com.leonjr.ldo.app.helper.JsonHelper;
 import com.leonjr.ldo.app.helper.LoggerHelper;
 import com.leonjr.ldo.extractor.utils.DocumentContext;
 import com.leonjr.ldo.parsing.llm.AiHelper;
 
-import dev.langchain4j.data.message.SystemMessage;
 import dev.langchain4j.data.message.UserMessage;
 import dev.langchain4j.data.segment.TextSegment;
 import dev.langchain4j.model.chat.request.ChatRequest;
@@ -35,7 +35,7 @@ public class ETLParser {
     private String tableDescription;
 
     public String preSummarize(String documentData) throws Exception {
-        SystemMessage systemMessage = SystemMessage.from(
+        UserMessage systemMessage = UserMessage.from(
                 "Table description" + tableDescription + "\n Text: "
                         + documentData);
         ResponseFormat jsonFormat = getJsonResponseFormat();
@@ -55,9 +55,8 @@ public class ETLParser {
             UserMessage userMessage = UserMessage.from(
                     "\"table_structure\":" + tableDescription + "\nchunk: " + chunk);
             ChatRequest chatRequest = ChatRequest.builder()
-                    .responseFormat(ResponseFormat.builder()
-                            .type(ResponseFormatType.JSON).build())
                     .messages(userMessage)
+                    .responseFormat(getJsonResponseFormat())
                     .build();
             return etlParserProcessor.process(chatRequest);
         }, 5, 600);
@@ -102,7 +101,29 @@ public class ETLParser {
         StringBuilder finalJson = new StringBuilder("[");
         for (Future<String> f : futures) {
             try {
-                finalJson.append(f.get()).append(",");
+                String jsonParsed = f.get().replace("```json", "").replace("```", "").replace("`[]`", "[]");
+                if (jsonParsed == null || jsonParsed.isEmpty()) {
+                    continue;
+                }
+                int arrayStart = jsonParsed.indexOf('[');
+                if (arrayStart == -1) {
+                    continue;
+                }
+
+                jsonParsed = jsonParsed.substring(arrayStart);
+
+                try {
+                    var testJson = JsonHelper.convertJsonStringToJsonNode(jsonParsed);
+                    if (testJson != null && !jsonParsed.trim().startsWith("[") && testJson.isArray()) {
+                        System.out.println("CHUNK NOT ARRAY: " + jsonParsed);
+                        continue;
+                    }
+                } catch (Exception e) {
+                    LoggerHelper.logger.error(
+                            "JSON CHUNK INVALID: " + e.getMessage());
+                    continue;
+                }
+                finalJson.append(jsonParsed).append(",");
             } catch (Exception e) {
                 LoggerHelper.logger.error(
                         "Error while processing chunk: " + e.getMessage());
