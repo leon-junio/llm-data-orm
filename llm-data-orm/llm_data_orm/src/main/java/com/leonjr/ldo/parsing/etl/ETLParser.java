@@ -53,7 +53,7 @@ public class ETLParser {
         return retryWithBackoff(() -> {
             var etlParserProcessor = AiHelper.buildNewAssistent();
             UserMessage userMessage = UserMessage.from(
-                    "\"table_structure\":" + tableDescription + "\nchunk: " + chunk);
+                    "\"table_structure\":" + tableDescription + "\nchunk:" + chunk);
             ChatRequest chatRequest = ChatRequest.builder()
                     .messages(userMessage)
                     .responseFormat(getJsonResponseFormat())
@@ -105,6 +105,18 @@ public class ETLParser {
                 if (jsonParsed == null || jsonParsed.isEmpty()) {
                     continue;
                 }
+
+                // remove any text after last ] char
+                int lastBracketIndex = jsonParsed.lastIndexOf(']');
+                if (lastBracketIndex != -1) {
+                    jsonParsed = jsonParsed.substring(0, lastBracketIndex + 1);
+                }
+                // remove any text before first [ char
+                int firstBracketIndex = jsonParsed.indexOf('[');
+                if (firstBracketIndex != -1) {
+                    jsonParsed = jsonParsed.substring(firstBracketIndex);
+                }
+
                 int arrayStart = jsonParsed.indexOf('[');
                 if (arrayStart == -1) {
                     continue;
@@ -123,6 +135,7 @@ public class ETLParser {
                             "JSON CHUNK INVALID: " + e.getMessage());
                     continue;
                 }
+
                 finalJson.append(jsonParsed).append(",");
             } catch (Exception e) {
                 LoggerHelper.logger.error(
