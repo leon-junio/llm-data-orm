@@ -50,7 +50,7 @@ public class AiHelper {
                 .apiKey(AppStore.getInstance().getLlmConfig().getOpenai().getApiKey())
                 .modelName(AppStore.getInstance().getLlmConfig().getOpenai().getModelName().getModelName())
                 .timeout(Duration.ofMinutes(10))
-                .temperature(0.1) // quase determinístico
+                .temperature(0.2) // quase determinístico
                 .topP(0.8) // recorta as caudas
                 .frequencyPenalty(0.4) // evita repetições
                 .presencePenalty(0.4)
@@ -64,7 +64,7 @@ public class AiHelper {
                 .apiKey(AppStore.getInstance().getLlmConfig().getGenericAi().getApiKey())
                 .modelName(AppStore.getInstance().getLlmConfig().getGenericAi().getModelName())
                 .timeout(Duration.ofMinutes(10))
-                .temperature(0.1) // quase determinístico
+                .temperature(0.2) // quase determinístico
                 .topP(0.8) // recorta as caudas
                 .frequencyPenalty(0.4) // evita repetições
                 .presencePenalty(0.4)
