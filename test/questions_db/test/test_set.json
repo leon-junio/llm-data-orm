@@ -1,0 +1,386 @@
+[
+  [
+    {
+      "topic": "Matemática",
+      "question_number": 1,
+      "question_text": "Quanto é 7 + 5?",
+      "answer": "12"
+    },
+    {
+      "topic": "Português",
+      "question_number": 2,
+      "question_text": "Qual é o plural de 'papel'?",
+      "answer": "Papéis"
+    },
+    {
+      "topic": "Geografia",
+      "question_number": 3,
+      "question_text": "Em que continente está o Brasil?",
+      "answer": "América do Sul"
+    },
+    {
+      "topic": "História",
+      "question_number": 4,
+      "question_text": "Quem descobriu o Brasil?",
+      "answer": "Pedro Álvares Cabral"
+    },
+    {
+      "topic": "Matemática",
+      "question_number": 5,
+      "question_text": "Quanto é 9 × 3?",
+      "answer": "27"
+    }
+  ],
+  [
+    {
+      "topic": "Português",
+      "question_number": 6,
+      "question_text": "Qual é o antônimo de 'feliz'?",
+      "answer": "Triste"
+    },
+    {
+      "topic": "Geografia",
+      "question_number": 7,
+      "question_text": "Qual é a capital do Brasil?",
+      "answer": "Brasília"
+    },
+    {
+      "topic": "História",
+      "question_number": 8,
+      "question_text": "Quando ocorreu a Proclamação da República?",
+      "answer": "15 de novembro de 1889"
+    },
+    {
+      "topic": "Matemática",
+      "question_number": 9,
+      "question_text": "Quanto é 100 - 37?",
+      "answer": "63"
+    },
+    {
+      "topic": "Português",
+      "question_number": 10,
+      "question_text": "O que é um substantivo?",
+      "answer": "Palavra que nomeia seres"
+    }
+  ],
+  [
+    {
+      "topic": "Geografia",
+      "question_number": 11,
+      "question_text": "Quais são os pontos cardeais?",
+      "answer": "Norte, Sul, Leste, Oeste"
+    },
+    {
+      "topic": "História",
+      "question_number": 12,
+      "question_text": "Quem foi Tiradentes?",
+      "answer": "Mártir da Inconfidência Mineira"
+    },
+    {
+      "topic": "Matemática",
+      "question_number": 13,
+      "question_text": "Quanto é 8²?",
+      "answer": "64"
+    },
+    {
+      "topic": "Português",
+      "question_number": 14,
+      "question_text": "O que é verbo?",
+      "answer": "Palavra que indica ação"
+    },
+    {
+      "topic": "Geografia",
+      "question_number": 15,
+      "question_text": "Onde fica o rio Amazonas?",
+      "answer": "América do Sul"
+    }
+  ],
+  [
+    {
+      "topic": "História",
+      "question_number": 16,
+      "question_text": "Quem foi o primeiro presidente do Brasil?",
+      "answer": "Marechal Deodoro da Fonseca"
+    },
+    {
+      "topic": "Matemática",
+      "question_number": 17,
+      "question_text": "Quanto é 15 ÷ 3?",
+      "answer": "5"
+    },
+    {
+      "topic": "Português",
+      "question_number": 18,
+      "question_text": "O que é um adjetivo?",
+      "answer": "Palavra que qualifica um substantivo"
+    },
+    {
+      "topic": "Geografia",
+      "question_number": 19,
+      "question_text": "Qual é o maior país da América do Sul?",
+      "answer": "Brasil"
+    },
+    {
+      "topic": "História",
+      "question_number": 20,
+      "question_text": "Em que ano foi assinada a Lei Áurea?",
+      "answer": "1888"
+    }
+  ],
+  [
+    {
+      "topic": "Matemática",
+      "question_number": 21,
+      "question_text": "Quanto é 144 ÷ 12?",
+      "answer": "12"
+    },
+    {
+      "topic": "Português",
+      "question_number": 22,
+      "question_text": "O que significa 'ônibus' no plural?",
+      "answer": "Ônibus"
+    },
+    {
+      "topic": "Geografia",
+      "question_number": 23,
+      "question_text": "Qual o menor continente do mundo?",
+      "answer": "Oceania"
+    },
+    {
+      "topic": "História",
+      "question_number": 24,
+      "question_text": "Quem escreveu a carta de Pero Vaz de Caminha?",
+      "answer": "Pero Vaz de Caminha"
+    },
+    {
+      "topic": "Matemática",
+      "question_number": 25,
+      "question_text": "Quanto é 6 × 7?",
+      "answer": "42"
+    }
+  ],
+  [
+    {
+      "topic": "Português",
+      "question_number": 26,
+      "question_text": "O que é uma crônica?",
+      "answer": "Texto curto, cotidiano e narrativo"
+    },
+    {
+      "topic": "Geografia",
+      "question_number": 27,
+      "question_text": "Qual é o país mais populoso do mundo?",
+      "answer": "China"
+    },
+    {
+      "topic": "História",
+      "question_number": 28,
+      "question_text": "Quem foi Dom Pedro I?",
+      "answer": "Primeiro imperador do Brasil"
+    },
+    {
+      "topic": "Matemática",
+      "question_number": 29,
+      "question_text": "Quanto é 11 + 14?",
+      "answer": "25"
+    },
+    {
+      "topic": "Português",
+      "question_number": 30,
+      "question_text": "O que é um verbo de ligação?",
+      "answer": "Verbo que liga sujeito a uma característica"
+    }
+  ],
+  [
+    {
+      "topic": "Matemática",
+      "question_number": 1,
+      "question_text": "Quanto é 7 + 5?",
+      "answer": "12"
+    },
+    {
+      "topic": "Português",
+      "question_number": 2,
+      "question_text": "Qual é o plural de 'papel'?",
+      "answer": "Papéis"
+    },
+    {
+      "topic": "Geografia",
+      "question_number": 3,
+      "question_text": "Em que continente está o Brasil?",
+      "answer": "América do Sul"
+    },
+    {
+      "topic": "História",
+      "question_number": 4,
+      "question_text": "Quem descobriu o Brasil?",
+      "answer": "Pedro Álvares Cabral"
+    },
+    {
+      "topic": "Matemática",
+      "question_number": 5,
+      "question_text": "Quanto é 9 × 3?",
+      "answer": "27"
+    }
+  ],
+  [
+    {
+      "topic": "Português",
+      "question_number": 6,
+      "question_text": "Qual é o antônimo de 'feliz'?",
+      "answer": "Triste"
+    },
+    {
+      "topic": "Geografia",
+      "question_number": 7,
+      "question_text": "Qual é a capital do Brasil?",
+      "answer": "Brasília"
+    },
+    {
+      "topic": "História",
+      "question_number": 8,
+      "question_text": "Quando ocorreu a Proclamação da República?",
+      "answer": "15 de novembro de 1889"
+    },
+    {
+      "topic": "Matemática",
+      "question_number": 9,
+      "question_text": "Quanto é 100 - 37?",
+      "answer": "63"
+    },
+    {
+      "topic": "Português",
+      "question_number": 10,
+      "question_text": "O que é um substantivo?",
+      "answer": "Palavra que nomeia seres"
+    }
+  ],
+  [
+    {
+      "topic": "Geografia",
+      "question_number": 11,
+      "question_text": "Quais são os pontos cardeais?",
+      "answer": "Norte, Sul, Leste, Oeste"
+    },
+    {
+      "topic": "História",
+      "question_number": 12,
+      "question_text": "Quem foi Tiradentes?",
+      "answer": "Mártir da Inconfidência Mineira"
+    },
+    {
+      "topic": "Matemática",
+      "question_number": 13,
+      "question_text": "Quanto é 8²?",
+      "answer": "64"
+    },
+    {
+      "topic": "Português",
+      "question_number": 14,
+      "question_text": "O que é verbo?",
+      "answer": "Palavra que indica ação"
+    },
+    {
+      "topic": "Geografia",
+      "question_number": 15,
+      "question_text": "Onde fica o rio Amazonas?",
+      "answer": "América do Sul"
+    }
+  ],
+  [
+    {
+      "topic": "História",
+      "question_number": 16,
+      "question_text": "Quem foi o primeiro presidente do Brasil?",
+      "answer": "Marechal Deodoro da Fonseca"
+    },
+    {
+      "topic": "Matemática",
+      "question_number": 17,
+      "question_text": "Quanto é 15 ÷ 3?",
+      "answer": "5"
+    },
+    {
+      "topic": "Português",
+      "question_number": 18,
+      "question_text": "O que é um adjetivo?",
+      "answer": "Palavra que qualifica um substantivo"
+    },
+    {
+      "topic": "Geografia",
+      "question_number": 19,
+      "question_text": "Qual é o maior país da América do Sul?",
+      "answer": "Brasil"
+    },
+    {
+      "topic": "História",
+      "question_number": 20,
+      "question_text": "Em que ano foi assinada a Lei Áurea?",
+      "answer": "1888"
+    }
+  ],
+  [
+    {
+      "topic": "Matemática",
+      "question_number": 21,
+      "question_text": "Quanto é 144 ÷ 12?",
+      "answer": "12"
+    },
+    {
+      "topic": "Português",
+      "question_number": 22,
+      "question_text": "O que significa 'ônibus' no plural?",
+      "answer": "Ônibus"
+    },
+    {
+      "topic": "Geografia",
+      "question_number": 23,
+      "question_text": "Qual o menor continente do mundo?",
+      "answer": "Oceania"
+    },
+    {
+      "topic": "História",
+      "question_number": 24,
+      "question_text": "Quem escreveu a carta de Pero Vaz de Caminha?",
+      "answer": "Pero Vaz de Caminha"
+    },
+    {
+      "topic": "Matemática",
+      "question_number": 25,
+      "question_text": "Quanto é 6 × 7?",
+      "answer": "42"
+    }
+  ],
+  [
+    {
+      "topic": "Português",
+      "question_number": 26,
+      "question_text": "O que é uma crônica?",
+      "answer": "Texto curto, cotidiano e narrativo"
+    },
+    {
+      "topic": "Geografia",
+      "question_number": 27,
+      "question_text": "Qual é o país mais populoso do mundo?",
+      "answer": "China"
+    },
+    {
+      "topic": "História",
+      "question_number": 28,
+      "question_text": "Quem foi Dom Pedro I?",
+      "answer": "Primeiro imperador do Brasil"
+    },
+    {
+      "topic": "Matemática",
+      "question_number": 29,
+      "question_text": "Quanto é 11 + 14?",
+      "answer": "25"
+    },
+    {
+      "topic": "Português",
+      "question_number": 30,
+      "question_text": "O que é um verbo de ligação?",
+      "answer": "Verbo que liga sujeito a uma característica"
+    }
+  ]
+]
