@@ -52,7 +52,7 @@ def chat_completion(request: ChatRequest):
         logging.debug(request)
         client = Client()
 
-        # client = g4f.Client(provider=g4f.Provider.Blackbox)
+        #client = g4f.Client(provider=g4f.Provider.Blackbox)
         response = client.chat.completions.create(
             model=request.model,
             messages=[{"role": msg.role, "content": msg.content} for msg in request.messages],
