@@ -365,14 +365,13 @@ public final class ETLPipeline {
         // test parsing process
         /** */
         endExecutionTime = System.currentTimeMillis();
-        // print results
-        debugETLResults();
         // print tests and validations
         validateETLWithLocalTests();
         // validateETLWithLocalTests();
         // validateETLWithLocalTests();
         // insert data into database
         insertETLIntoDatabase();
+        debugETLResults();
     }
 
     /**
