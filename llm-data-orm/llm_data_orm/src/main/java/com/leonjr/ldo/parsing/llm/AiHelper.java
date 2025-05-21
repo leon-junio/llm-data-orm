@@ -64,10 +64,10 @@ public class AiHelper {
                 .apiKey(AppStore.getInstance().getLlmConfig().getGenericAi().getApiKey())
                 .modelName(AppStore.getInstance().getLlmConfig().getGenericAi().getModelName())
                 .timeout(Duration.ofMinutes(10))
-                .temperature(0.2) // quase determinístico
-                .topP(0.8) // recorta as caudas
-                .frequencyPenalty(0.4) // evita repetições
-                .presencePenalty(0.4)
+                .temperature(0.2)
+                .topP(1d)
+                .frequencyPenalty(0d)
+                .presencePenalty(0d)
                 .maxTokens(12000)
                 .build();
     }
