@@ -2,6 +2,7 @@ package com.leonjr.ldo;
 
 import java.io.File;
 import java.util.Calendar;
+import java.util.List;
 import java.util.concurrent.Callable;
 
 import com.leonjr.ldo.app.consts.AppConsts;
@@ -41,6 +42,9 @@ public class Main implements Callable<Integer> {
     @Option(names = { "-ts", "--testset" }, description = "Path to the test set")
     private String testSetPath;
 
+    @Option(names = { "-p", "--pages" }, description = "Pages regex to process (if applicable). It can be used to represent a set of pages or a range of pages e.g., 1,2,3 or 1-3 ( comma separated or range). If not set, all pages will be processed.")
+    private String pagesRegex;
+
     @Override
     public Integer call() {
         if (helpRequested) {
@@ -51,7 +55,7 @@ public class Main implements Callable<Integer> {
             LoggerHelper.logger.error("Configuration file path and table name are required!");
             return 1;
         }
-        boot(configFilePath, tableName, debug, testSetPath);
+        boot(configFilePath, tableName, debug, testSetPath, pagesRegex);
         if (exec) {
             return startETLPipeline(fileOrFolderpath);
         }
@@ -64,7 +68,7 @@ public class Main implements Callable<Integer> {
      * @param configFilePath Path to the configuration file
      * @param tableName      Table name to retrieve information
      */
-    public static void boot(String configFilePath, String tableName, boolean debug, String testSetPath) {
+    public static void boot(String configFilePath, String tableName, boolean debug, String testSetPath, String pagesRegex) {
         LoggerHelper.logger.info("Starting application at ", Calendar.getInstance().getTime());
         LoggerHelper.logger.info(AppConsts.APP_ASC_TITLE);
         LoggerHelper.logger.info("Loading configuration file...");
@@ -75,7 +79,7 @@ public class Main implements Callable<Integer> {
             }
             LoggerHelper.logger.info("Configuration loaded successfully!");
             LoggerHelper.logger.info(startupConf);
-            AppStore.getInstance(startupConf, tableName, debug, testSetPath);
+            AppStore.getInstance(startupConf, tableName, debug, testSetPath, pagesRegex);
             DBHelper.startDB(startupConf.getDatabase());
             LoggerHelper.logger.info("Application started successfully!");
         } catch (Exception e) {
