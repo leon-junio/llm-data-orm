@@ -13,9 +13,11 @@ import dev.langchain4j.data.document.parser.apache.tika.ApacheTikaDocumentParser
 
 import org.apache.tika.parser.AutoDetectParser;
 
+import com.leonjr.ldo.AppStore;
 import com.leonjr.ldo.extractor.utils.DocumentSegmenter;
 import com.leonjr.ldo.extractor.utils.HtmlCleaner;
 import com.leonjr.ldo.extractor.utils.ImageUtils;
+import com.leonjr.ldo.extractor.utils.PageExtractor;
 import com.leonjr.ldo.extractor.utils.TextCleaner;
 import com.leonjr.ldo.parsing.llm.AiHelper;
 
@@ -33,6 +35,10 @@ public final class DocumentTextExtractor {
                 var imageSummary = AiHelper.genericImageSummary(imageAsBase64, Files.probeContentType(Paths.get(path)));
                 var doc = ImageUtils.createDocumentFromImagePath(path, imageSummary);
                 return Arrays.asList(doc);
+            }
+            if (AppStore.getInstance().isPagePicksOrRange()) {
+                File tempFilePath = PageExtractor.extractPageToTempFile(path);
+                path = tempFilePath.getAbsolutePath();
             }
             String fileType = path.substring(path.lastIndexOf('.') + 1).toLowerCase();
             var rawDoc = FileSystemDocumentLoader.loadDocument(path, parser);
