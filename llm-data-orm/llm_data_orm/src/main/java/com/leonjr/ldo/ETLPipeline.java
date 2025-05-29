@@ -259,18 +259,23 @@ public final class ETLPipeline {
             return;
         }
 
-        LocalSimpleValidationResult validationResult = null;
         List<LocalSimpleValidationResult> testSetResults = new ArrayList<>();
 
         if (AppStore.getInstance().getTestSetPath() == null
                 || AppStore.getInstance().getTestSetPath().isEmpty()) {
             LoggerHelper.logger.warn("Not found test Set data, using local validation!");
             for (var etlDocument : validatedDocuments) {
-                validationResult = ETLValidation.validateParsingLocally(
+                var validationResult = ETLValidation.validateParsingLocally(
                         etlDocument.getJsonSchema(),
                         tableDescription);
                 LoggerHelper.logger.info("Document " + rawDocuments.indexOf(etlDocument) + ":");
                 LoggerHelper.logger.info("Validation response:" + System.lineSeparator() + validationResult);
+                if (validationResult != null) {
+                    testSetResults.add(validationResult);
+                } else {
+                    LoggerHelper.logger.warn("Validation result is null for document "
+                            + rawDocuments.indexOf(etlDocument));
+                }
             }
         } else {
             JsonNode testSet = TestSetHelper.loadTestSet();
@@ -283,34 +288,46 @@ public final class ETLPipeline {
             for (var etlDocument : validatedDocuments) {
                 var test = testSet.get(index);
                 index++;
-                validationResult = ETLValidation.validateParsingWithTestJson(test,
+                var validationResult = ETLValidation.validateParsingWithTestJson(test,
                         etlDocument.getJsonSchema(), tableDescription);
                 LoggerHelper.logger.info("Document " + rawDocuments.indexOf(etlDocument) + ":");
                 LoggerHelper.logger.info("Validation response:" + System.lineSeparator() +
                         validationResult);
+                if (validationResult != null) {
+                    testSetResults.add(validationResult);
+                } else {
+                    LoggerHelper.logger.warn("Validation result is null for document "
+                            + rawDocuments.indexOf(etlDocument));
+                }
             }
         }
 
         // Force execution stop
-        if (validationResult != null) {
-            if (!validationResult.getMissingMandatoryFields().isEmpty()) {
-                throw new Exception("Execution stopped due to missing mandatory fields: "
-                        + validationResult.getMissingMandatoryFields());
+        if (testSetResults.isEmpty()) {
+            throw new RuntimeException("No validation results found, skipping further validation checks!");
+        }
+        for (var validationResult : testSetResults) {
+            if (validationResult != null) {
+                if (!validationResult.getMissingMandatoryFields().isEmpty()) {
+                    throw new Exception("Execution stopped due to missing mandatory fields: "
+                            + validationResult.getMissingMandatoryFields());
+                }
+                if (!validationResult.getDataTypeErrors().isEmpty()) {
+                    throw new Exception("Execution stopped due to data type errors: "
+                            + validationResult.getDataTypeErrors());
+                }
+                var conformity = validationResult.getConformityAndUnknownRate().getLeft();
+                var unknownRate = validationResult.getConformityAndUnknownRate().getRight();
+                if (conformity < 0.9) {
+                    throw new Exception("Execution stopped due to conformity rate: " + conformity);
+                }
+                if (unknownRate > 0.1) {
+                    throw new Exception("Execution stopped due to unknown rate: " + unknownRate);
+                }
+
+            } else {
+                throw new Exception("Found invalid validation result!");
             }
-            if (!validationResult.getDataTypeErrors().isEmpty()) {
-                throw new Exception("Execution stopped due to data type errors: "
-                        + validationResult.getDataTypeErrors());
-            }
-            var conformity = validationResult.getConformityAndUnknownRate().getLeft();
-            var unknownRate = validationResult.getConformityAndUnknownRate().getRight();
-            if (conformity < 0.9) {
-                throw new Exception("Execution stopped due to conformity rate: " + conformity);
-            }
-            if (unknownRate > 0.1) {
-                throw new Exception("Execution stopped due to unknown rate: " + unknownRate);
-            }
-        } else {
-            throw new Exception("Could not found any validation result!");
         }
     }
 
