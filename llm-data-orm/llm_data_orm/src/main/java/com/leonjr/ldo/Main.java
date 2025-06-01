@@ -2,7 +2,6 @@ package com.leonjr.ldo;
 
 import java.io.File;
 import java.util.Calendar;
-import java.util.List;
 import java.util.concurrent.Callable;
 
 import com.leonjr.ldo.app.consts.AppConsts;

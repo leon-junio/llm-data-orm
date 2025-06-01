@@ -12,7 +12,7 @@ import dev.langchain4j.data.segment.TextSegment;
 
 public class DocumentSegmenter {
 
-    private static final int LINES_MAX_SEGMENT_SIZE = 1024, DEFAULT_MAX_SEGMENT_SIZE = 512;
+    private static final int LINES_MAX_SEGMENT_SIZE = 2048, DEFAULT_MAX_SEGMENT_SIZE = 512;
     private static final int MIN_SEGMENT_SIZE = 0;
 
     /**
@@ -30,12 +30,12 @@ public class DocumentSegmenter {
         switch (fileType) {
             case "pdf":
             case "docx":
-                splitter = new DocumentByLineSplitter(2048, 0);
+                splitter = new DocumentByLineSplitter(LINES_MAX_SEGMENT_SIZE, 0);
                 break;
             case "csv":
             case "tsv":
             case "txt":
-                splitter = new DocumentByLineSplitter(2048, 0);
+                splitter = new DocumentByLineSplitter(LINES_MAX_SEGMENT_SIZE, 0);
                 break;
             case "json":
                 splitter = new DocumentByRegexSplitter("\\{[^}]+\\}", "\n", DEFAULT_MAX_SEGMENT_SIZE, MIN_SEGMENT_SIZE);
@@ -56,7 +56,8 @@ public class DocumentSegmenter {
             case "webp":
                 return List.of(TextSegment.from(document.text()));
             default:
-                splitter = new DocumentByLineSplitter(2048, 0);;
+                splitter = new DocumentByLineSplitter(LINES_MAX_SEGMENT_SIZE, 0);
+                ;
                 break;
         }
         var segments = splitter.split(document);
