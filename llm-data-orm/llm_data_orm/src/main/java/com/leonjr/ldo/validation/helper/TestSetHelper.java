@@ -13,12 +13,10 @@ public class TestSetHelper {
      * @throws Exception if there is an error loading the test set
      */
     public static JsonNode loadTestSet() throws Exception {
-        // AppStore.getInstance().getTestSetPath();
         var testSetPath = AppStore.getInstance().getTestSetPath();
         if (testSetPath == null || testSetPath.isEmpty()) {
             throw new IllegalArgumentException("Test set path is not set in the configuration.");
         }
-        // load JSON file from the test set path
         var jsonNode = JsonHelper.readFileAsJsonNode(testSetPath);
         if (jsonNode == null) {
             throw new IllegalArgumentException("Test set is empty or not valid JSON.");

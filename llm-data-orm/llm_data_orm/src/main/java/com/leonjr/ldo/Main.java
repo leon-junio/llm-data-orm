@@ -13,6 +13,36 @@ import com.leonjr.ldo.database.handler.DBHelper;
 import picocli.CommandLine;
 import picocli.CommandLine.Option;
 
+/**
+ * Main entry point for the LLM Data ORM application.
+ * This class implements a command-line interface using PicoCLI for processing data through an ETL pipeline.
+ * 
+ * The application supports various operations including:
+ * - Loading configuration files
+ * - Processing files or folders through ETL pipeline
+ * - Database operations with specified table names
+ * - Debug mode and test set validation
+ * - Page-specific processing with regex patterns
+ * 
+ * Required parameters:
+ * - Configuration file path (-c, --config)
+ * - Table name (-t, --table)
+ * 
+ * Optional parameters:
+ * - File or folder path to process (-f, --file, --folder)
+ * - Execution flag to run ETL pipeline (-e, --exec)
+ * - Debug mode (-d, --debug)
+ * - Test set path (-ts, --testset)
+ * - Pages regex for selective processing (-p, --pages)
+ * - Help display (-h, --help)
+ * 
+ * The application follows a boot-then-execute pattern where configuration is loaded first,
+ * then optionally runs the ETL pipeline if the execution flag is set.
+ * 
+ * @author leonjr
+ * @version 1.0
+ * @since 1.0
+ */
 public class Main implements Callable<Integer> {
     public static void main(String[] args) {
         int exitCode = new CommandLine(new Main()).execute(args);

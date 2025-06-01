@@ -380,12 +380,9 @@ public final class ETLPipeline {
         validateAndSummarizeDocuments();
         parsingProcess();
         // test parsing process
-        /** */
         endExecutionTime = System.currentTimeMillis();
         // print tests and validations
         validateETLWithLocalTests();
-        // validateETLWithLocalTests();
-        // validateETLWithLocalTests();
         // insert data into database
         insertETLIntoDatabase();
         debugETLResults();
