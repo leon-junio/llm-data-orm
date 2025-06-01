@@ -1,11 +1,19 @@
 app:
   stopIfInvalidatedDocument: false
-  maxExecutorsThreads: 10
-  llm_type: "OPENAI"
+  maxExecutorsThreads: 16
+  maxETLProcessors: 3
+  llmType: "GENERIC"
   llmConfig:
-    local:
-      httpModelUrl: "https://localhost:8080/local/llm/api"
-      conversationApiPath: "/conversation"
+    genericAi:
+      apiKey: "test"
+      customUrl: "http://localhost:8000/v1"
+      modelName: "dolphin-2.9"
+  # llmType: "OPENAI"
+  # llmConfig:
+  #   openai:
+  #     apiKey: "your-api-key"
+  #     customUrl: "https://api.openai.com/v1"
+  #     modelName: "GPT_4O"
 
 database:
   host: "localhost" # -> Defines the host to be used in the database connection (URL or IP) 
@@ -14,3 +22,4 @@ database:
   password: "" # -> Defines the password to be used
   databaseName: "db" # -> Defines the database name to be used
   databaseType: "MYSQL" # MYSQL, POSTGRESQL -> Defines the database type to be used
+  truncateTableBeforeInsert: true
