@@ -1,5 +1,36 @@
 package com.leonjr.ldo.parsing.llm.prompts;
 
+/**
+ * Collection of static prompt templates used for ETL (Extract, Transform, Load)
+ * operations
+ * and document processing with Large Language Models (LLMs).
+ * 
+ * <p>
+ * This class provides predefined text prompts that instruct LLMs on how to:
+ * <ul>
+ * <li>Extract structured data from text chunks in a distributed ETL
+ * process</li>
+ * <li>Summarize documents and validate their content against table schemas</li>
+ * <li>Process images and extract tabular data from visual content</li>
+ * <li>Analyze and describe image content with text extraction capabilities</li>
+ * </ul>
+ * 
+ * <p>
+ * All prompts are designed to work with database schemas and maintain data
+ * integrity
+ * by avoiding auto-incremental fields, ensuring proper data types, and
+ * following
+ * JSON formatting requirements for downstream processing.
+ * 
+ * <p>
+ * The prompts support multilingual content processing while maintaining English
+ * schema structures, and include validation mechanisms to filter out irrelevant
+ * or invalid document content.
+ * 
+ * @author leonjr
+ * @version 1.0
+ * @since 1.0
+ */
 public class PromptTexts {
     public static final String ETL_PROCESS_TEXT = """
             ROLE: Distributed ETL Processor extracting partial dataset fragments from text chunks.

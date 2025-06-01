@@ -34,6 +34,20 @@ public class ETLParser {
     @NonNull
     private String tableDescription;
 
+    /**
+     * Pre-processes and summarizes document data using AI assistance.
+     * 
+     * This method takes raw document data and generates a preliminary summary by
+     * combining
+     * it with table description information and sending it to an AI language model
+     * for processing.
+     * The response is formatted as JSON according to the specified response format.
+     * 
+     * @param documentData the raw text data from the document to be summarized
+     * @return a string containing the AI-generated pre-summary of the document data
+     * @throws Exception if there's an error during AI processing, message creation,
+     *                   or communication with the language model
+     */
     public String preSummarize(String documentData) throws Exception {
         UserMessage systemMessage = UserMessage.from(
                 "Table description" + tableDescription + "\n Text: "
@@ -48,6 +62,26 @@ public class ETLParser {
         return response;
     }
 
+    /**
+     * Processes a data chunk using an AI service to transform it according to the
+     * table structure.
+     * 
+     * <p>
+     * This method applies rate limiting before processing and includes retry logic
+     * with exponential
+     * backoff to handle potential failures. The AI service receives both the table
+     * structure description
+     * and the data chunk to perform intelligent data transformation.
+     * </p>
+     * 
+     * @param chunk the data chunk to be processed by the AI service
+     * @return the processed result from the AI service as a String
+     * @throws Exception if the processing fails after all retry attempts or if rate
+     *                   limiting fails
+     * 
+     * @see #retryWithBackoff(Supplier, int, int)
+     * @see AiHelper#buildNewAssistent()
+     */
     public String processChunkWithAiService(String chunk) throws Exception {
         agentRateLimiter.acquire();
         return retryWithBackoff(() -> {
@@ -89,6 +123,42 @@ public class ETLParser {
         throw new IllegalStateException("Não deveria chegar aqui");
     }
 
+    /**
+     * Executes parallel parsing of text segments using AI service and aggregates
+     * results into a single JSON array.
+     * 
+     * This method processes multiple text segments concurrently by submitting each
+     * chunk to a thread pool
+     * for AI-based parsing. The results are then cleaned, validated, and combined
+     * into a unified JSON array.
+     * 
+     * @param chunks List of TextSegment objects to be processed and parsed
+     * @return A JSON string containing an array of all successfully parsed and
+     *         validated chunks
+     * @throws Exception if any error occurs during chunk processing or if executor
+     *                   termination fails
+     * 
+     * @implNote The method performs the following operations:
+     *           <ul>
+     *           <li>Creates a fixed thread pool using configured maximum executor
+     *           threads</li>
+     *           <li>Submits each chunk for processing with AI service using
+     *           document context</li>
+     *           <li>Cleans JSON responses by removing markdown formatting (```json,
+     *           ```, `[]`)</li>
+     *           <li>Extracts valid JSON arrays by trimming content outside bracket
+     *           boundaries</li>
+     *           <li>Validates each JSON chunk and skips invalid or non-array
+     *           responses</li>
+     *           <li>Concatenates all valid JSON arrays into a single result
+     *           array</li>
+     *           <li>Ensures proper executor shutdown with 1-minute timeout</li>
+     *           </ul>
+     * 
+     *           Invalid chunks are logged and skipped rather than causing method
+     *           failure.
+     *           Debug information is logged when debug mode is enabled in AppStore.
+     */
     public String executeParsing(List<TextSegment> chunks) throws Exception {
         ExecutorService executor = Executors.newFixedThreadPool(
                 AppStore.getStartConfigs().getApp().getMaxExecutorsThreads());
@@ -156,6 +226,15 @@ public class ETLParser {
         return finalJson.toString().replace("```json", "").replace("```", "").replace("`[]`", "[]");
     }
 
+    /**
+     * Creates and returns a JSON response format configuration.
+     * 
+     * This method constructs a ResponseFormat object configured for JSON output
+     * using the builder pattern. The response format is set to JSON type.
+     * 
+     * @return ResponseFormat configured for JSON response type
+     * @throws Exception if there's an error during ResponseFormat creation
+     */
     public ResponseFormat getJsonResponseFormat() throws Exception {
         ResponseFormat responseFormat = ResponseFormat.builder()
                 .type(ResponseFormatType.JSON)

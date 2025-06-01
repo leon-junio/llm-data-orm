@@ -24,6 +24,16 @@ public class ETLDocument {
     private List<TextSegment> segments;
     private String parsedResponse;
 
+    /**
+     * Parses the stored response string into a JsonNode representation.
+     * 
+     * This method takes the parsedResponse field (assumed to be a JSON string)
+     * and converts it into a JsonNode object using Jackson's ObjectMapper.
+     * 
+     * @return JsonNode representation of the parsed response
+     * @throws Exception if the parsedResponse contains invalid JSON or if parsing
+     *                   fails
+     */
     public JsonNode getJsonSchema() throws Exception {
         ObjectMapper mapper = new ObjectMapper();
         JsonNode parsedResponseJson = null;

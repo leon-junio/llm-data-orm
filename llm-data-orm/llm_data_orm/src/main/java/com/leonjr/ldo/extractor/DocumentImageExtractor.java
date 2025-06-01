@@ -24,6 +24,23 @@ import java.util.stream.StreamSupport;
 
 import javax.imageio.ImageIO;
 
+/**
+ * Utility class for extracting images from various document formats.
+ * 
+ * This class provides static methods to extract BufferedImage objects from
+ * PDF, DOCX, and PPTX files. It supports reading documents from file paths
+ * and can automatically determine the extraction method based on file
+ * extension.
+ * 
+ * Supported formats:
+ * - PDF files (.pdf) - extracts embedded images from PDF pages
+ * - Microsoft Word documents (.docx) - extracts all pictures from the document
+ * - Microsoft PowerPoint presentations (.pptx) - extracts all picture data from
+ * slides
+ * 
+ * @author leonjr
+ * @version 1.0
+ */
 public class DocumentImageExtractor {
 
     public static List<BufferedImage> extractImagesFromPDF(String pdfPath) throws IOException {

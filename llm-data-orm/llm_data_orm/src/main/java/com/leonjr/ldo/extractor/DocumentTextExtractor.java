@@ -24,6 +24,40 @@ import com.leonjr.ldo.parsing.llm.AiHelper;
 import dev.langchain4j.data.segment.TextSegment;
 
 public final class DocumentTextExtractor {
+    /**
+     * Extracts and processes documents from a given file path or directory.
+     * 
+     * This method handles various document types including images, HTML files, and
+     * other text-based documents.
+     * It can process either a single file or recursively load all documents from a
+     * directory.
+     * 
+     * @param path The file path or directory path to process. Can be either:
+     *             - A directory path: All documents will be loaded recursively
+     *             - A single file path: The specific file will be processed
+     * 
+     * @return A List of Document objects containing the extracted and cleaned text
+     *         content
+     *         along with their metadata. Each document represents either:
+     *         - A single processed file (when path is a file)
+     *         - Multiple documents (when path is a directory)
+     * 
+     * @throws Exception If any error occurs during:
+     *                   - File system access or reading
+     *                   - Document parsing with Apache Tika
+     *                   - Image processing and AI summarization
+     *                   - Page extraction for PDF files
+     *                   - Text cleaning operations
+     * 
+     * @implNote The method performs the following processing steps:
+     *           - For directories: Recursively loads all documents using Apache
+     *           Tika parser
+     *           - For images: Converts to base64, generates AI summary, and creates
+     *           document
+     *           - For PDFs: Extracts specific pages if page selection is enabled
+     *           - For HTML files: Applies HTML-specific cleaning
+     *           - For other files: Applies general text cleaning
+     */
     public static List<Document> getDocument(String path) throws Exception {
         boolean isFolder = new File(path).isDirectory();
         DocumentParser parser = new ApacheTikaDocumentParser(AutoDetectParser::new, null, null, null, true);
@@ -56,6 +90,17 @@ public final class DocumentTextExtractor {
         }
     }
 
+    /**
+     * Extracts text segments from a document using the DocumentSegmenter.
+     * 
+     * This method serves as a facade to the DocumentSegmenter's getSegments method,
+     * providing a convenient way to segment a document into smaller text portions
+     * for further processing or analysis.
+     * 
+     * @param document the Document object to be segmented into text portions
+     * @return a List of TextSegment objects representing the segmented portions of the document
+     * @throws Exception if an error occurs during the document segmentation process
+     */
     public static List<TextSegment> getSegments(Document document) throws Exception {
         return DocumentSegmenter.getSegments(document);
     }

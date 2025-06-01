@@ -19,13 +19,40 @@ import java.util.List;
 public class JSONBatchInserter {
 
     /**
-     * Insere em lotes (chunks) o JSON array na tabela descrita.
-     *
-     * @param conn      Conexão JDBC aberta
-     * @param tableDesc Descrição da tabela (nome + colunas)
-     * @param jsonArray JsonNode array com os objetos a inserir
-     * @param chunkSize Quantidade de registros por lote
-     * @throws SQLException
+     * Inserts a JSON array into a database table using batch processing with
+     * configurable chunk sizes.
+     * This method processes the JSON array in chunks to optimize memory usage and
+     * database performance.
+     * 
+     * <p>
+     * The method supports automatic data type mapping from JSON values to
+     * appropriate SQL types,
+     * including special handling for ISO 8601 date/time strings. It also supports
+     * truncating the
+     * target table before insertion if configured to do so.
+     * </p>
+     * 
+     * <p>
+     * The insertion is performed within a transaction - if any rows are
+     * successfully inserted,
+     * the transaction is committed; otherwise, it is rolled back.
+     * </p>
+     * 
+     * @param conn      the database connection to use for the insertion operation
+     * @param tableDesc the table description containing metadata about the target
+     *                  table structure
+     * @param jsonArray the JSON array containing the data to be inserted
+     * @param chunkSize the number of rows to process in each batch before executing
+     *                  the SQL statement
+     * @return true if any rows were successfully inserted, false otherwise
+     * @throws SQLException if a database access error occurs during the insertion
+     *                      process
+     * @throws Exception    if an error occurs during JSON processing or other
+     *                      operations
+     * 
+     * @see TableDescription
+     * @see ColumnDescription
+     * @see JsonNode
      */
     public static boolean insertJsonArrayInChunks(
             Connection conn,
@@ -40,7 +67,6 @@ public class JSONBatchInserter {
             truncateTableBeforeInsert(conn, tableName);
         }
 
-        // Monta a parte fixa do INSERT: "INSERT INTO table (col1, col2, ...) VALUES "
         StringBuilder sql = new StringBuilder("INSERT INTO ")
                 .append(tableName).append(" (");
         for (int i = 0; i < cols.size(); i++) {
@@ -49,7 +75,6 @@ public class JSONBatchInserter {
                 sql.append(", ");
         }
         sql.append(") VALUES (");
-        // placeholders (?,?,?,...)
         sql.append("?".repeat(Math.max(0, cols.size()))
                 .replaceAll("(.)(?=.)", "$1, "));
         sql.append(")");
@@ -65,7 +90,6 @@ public class JSONBatchInserter {
 
             for (int idx = 0; idx < totalRows; idx++) {
                 JsonNode row = jsonArray.get(idx);
-                // Para cada coluna, extrai o valor do JSON e seta no PreparedStatement
                 for (int c = 0; c < cols.size(); c++) {
                     String colName = cols.get(c).getName();
                     String colType = cols.get(c).getType();
@@ -106,28 +130,35 @@ public class JSONBatchInserter {
 
                 ps.addBatch();
                 count++;
-
-                // Quando atinge chunkSize, executa e limpa o batch
                 if (count % chunkSize == 0) {
                     anyInserted |= ps.executeBatch().length > 0;
                 }
             }
-
-            // Finaliza o batch restante
             if (count % chunkSize != 0) {
                 anyInserted |= ps.executeBatch().length > 0;
             }
 
             if (anyInserted) {
-                conn.commit(); // Commit após inserção
+                conn.commit();
             } else {
-                conn.rollback(); // Rollback se nada foi inserido
+                conn.rollback();
             }
         }
 
         return anyInserted;
     }
 
+    /**
+     * Checks if the given text string represents a valid ISO 8601 date-time format.
+     * 
+     * This method attempts to parse the input string using the ISO_OFFSET_DATE_TIME
+     * formatter, which expects the format: yyyy-MM-dd'T'HH:mm:ss[.SSS]XXX
+     * (e.g., "2023-12-25T14:30:00+02:00").
+     * 
+     * @param text the string to be validated as ISO 8601 date-time format
+     * @return true if the text is a valid ISO 8601 date-time string, false
+     *         otherwise
+     */
     private static boolean isIso8601(String text) {
         try {
             OffsetDateTime.parse(text, DateTimeFormatter.ISO_OFFSET_DATE_TIME);
@@ -137,6 +168,19 @@ public class JSONBatchInserter {
         }
     }
 
+    /**
+     * Truncates the specified table before performing batch insert operations.
+     * This method removes all rows from the table while preserving the table
+     * structure,
+     * which is useful for clearing existing data before inserting new batch data.
+     * 
+     * @param conn      the database connection to use for the truncate operation
+     * @param tableName the name of the table to truncate
+     * @return true if the truncate operation affected at least one row, false
+     *         otherwise
+     * @throws SQLException if a database access error occurs or the table doesn't
+     *                      exist
+     */
     private static boolean truncateTableBeforeInsert(Connection conn, String tableName) throws SQLException {
         String sql = "TRUNCATE TABLE " + tableName;
         try (PreparedStatement ps = conn.prepareStatement(sql)) {

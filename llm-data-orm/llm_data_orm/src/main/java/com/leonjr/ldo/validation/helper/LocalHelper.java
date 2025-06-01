@@ -22,11 +22,13 @@ public final class LocalHelper {
     /**
      * Calculates the Jaccard similarity coefficient between two JSON objects.
      * 
-     * The Jaccard similarity is computed by flattening both JSON objects into normalized
-     * sets of key-value pairs, then calculating the ratio of the intersection size to
+     * The Jaccard similarity is computed by flattening both JSON objects into
+     * normalized
+     * sets of key-value pairs, then calculating the ratio of the intersection size
+     * to
      * the union size of these sets.
      * 
-     * @param testJson the first JSON object to compare
+     * @param testJson   the first JSON object to compare
      * @param actualJson the second JSON object to compare
      * @return a double value between 0.0 and 1.0 representing the similarity,
      *         where 1.0 indicates identical JSON structures and 0.0 indicates
@@ -72,7 +74,6 @@ public final class LocalHelper {
         Set<String> falsePositives = new HashSet<>(actual);
         Set<String> falseNegatives = new HashSet<>(expected);
 
-        // Avaliar matches com tolerância textual para strings
         for (String actualEntry : actual) {
             Optional<String> match = expected.stream()
                     .filter(expectedEntry -> isSimilar(actualEntry, expectedEntry))
@@ -121,7 +122,6 @@ public final class LocalHelper {
             throw new IllegalArgumentException("Expected dataJson to be an array.");
         }
 
-        // Mapeia nome do campo → tipo esperado
         Map<String, String> tableFieldTypes = new HashMap<>();
         for (JsonNode column : tableStructure) {
             String name = column.get("name").asText();
@@ -158,7 +158,6 @@ public final class LocalHelper {
                         unknownFields++;
                     }
                 } else {
-                    // Campo não está na tabela
                     unknownFields++;
                 }
             }

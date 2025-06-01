@@ -21,17 +21,76 @@ import lombok.Data;
 @Data
 public class AiHelper {
 
+    private static final double ETL_PROCESSING_TEMPERATURE = 0.2;
+    private static final double ETL_PROCESSING_TOP_P = 1d;
+    private static final double ETL_PROCESSING_FREQUENCY_PENALTY = 0d;
+    private static final double ETL_PROCESSING_PRESENCE_PENALTY = 0d;
+    private static final int ETL_PROCESSING_MAX_TOKENS = 12000;
+    private static final int ETL_PROCESSING_TIMEOUT_MINUTES = 10;
+    private static final double SUMMARY_MODEL_TEMPERATURE = 0.5;
+    private static final double SUMMARY_MODEL_TOP_P = 0.9;
+    private static final double SUMMARY_MODEL_FREQUENCY_PENALTY = 0.4;
+    private static final double SUMMARY_MODEL_PRESENCE_PENALTY = 0.4;
+    private static final int SUMMARY_MODEL_MAX_TOKENS = 12000;
+    private static final int SUMMARY_MODEL_TIMEOUT_MINUTES = 10;
+
+    /**
+     * Builds a new AI assistant instance for ETL (Extract, Transform, Load)
+     * processing operations.
+     * 
+     * This method creates an ETLProcessor instance using the AI Services framework,
+     * configured
+     * with the provided chat language model for natural language processing
+     * capabilities.
+     * 
+     * @param chatModel the chat language model to be used by the ETL processor for
+     *                  AI-powered
+     *                  data processing and transformation operations
+     * @return a new ETLProcessor instance configured with the specified chat model
+     * @throws Exception if there is an error during the AI service builder
+     *                   configuration
+     *                   or ETLProcessor instantiation process
+     */
     public static ETLProcessor buildNewAssistent(ChatLanguageModel chatModel) throws Exception {
         return AiServices.builder(ETLProcessor.class)
                 .chatLanguageModel(chatModel).build();
     }
 
+    /**
+     * Creates and builds a new AI assistant instance for ETL (Extract, Transform,
+     * Load) processing.
+     * 
+     * This method constructs an ETLProcessor using the AiServices builder pattern,
+     * configured
+     * with a chat language model obtained from the getChatModel() method.
+     * 
+     * @return ETLProcessor a configured AI assistant instance ready for ETL
+     *         operations
+     * @throws Exception if there's an error during the chat model retrieval or
+     *                   service building process
+     */
     public static ETLProcessor buildNewAssistent() throws Exception {
         var chatModel = getChatModel();
         return AiServices.builder(ETLProcessor.class)
                 .chatLanguageModel(chatModel).build();
     }
 
+    /**
+     * Creates and returns a ChatLanguageModel instance based on the configured LLM
+     * type.
+     * 
+     * This method acts as a factory for creating different types of chat language
+     * models
+     * by reading the LLM type from the application configuration and instantiating
+     * the
+     * appropriate model implementation.
+     * 
+     * @return ChatLanguageModel instance configured according to the application
+     *         settings
+     * @throws IllegalArgumentException if the configured LLM type is not supported
+     * @throws Exception                if there's an error during model creation or
+     *                                  configuration retrieval
+     */
     public static ChatLanguageModel getChatModel() throws IllegalArgumentException, Exception {
         var type = AppStore.getStartConfigs().getApp().getLlmType();
         switch (type) {
@@ -44,34 +103,77 @@ public class AiHelper {
         }
     }
 
+    /**
+     * Creates and configures an OpenAI chat language model with ETL processing
+     * parameters.
+     * 
+     * This method builds an OpenAI chat model using configuration values from the
+     * application
+     * store, including API credentials, model settings, and processing parameters
+     * optimized
+     * for ETL (Extract, Transform, Load) operations.
+     * 
+     * @return A configured {@link ChatLanguageModel} instance ready for OpenAI API
+     *         interactions
+     * @throws Exception if there's an error during model configuration or if
+     *                   required
+     *                   configuration values are missing or invalid
+     */
     public static ChatLanguageModel getOpenAiChatLanguageModel() throws Exception {
         return OpenAiChatModel.builder()
                 .baseUrl(AppStore.getInstance().getLlmConfig().getOpenai().getCustomUrl())
                 .apiKey(AppStore.getInstance().getLlmConfig().getOpenai().getApiKey())
                 .modelName(AppStore.getInstance().getLlmConfig().getOpenai().getModelName().getModelName())
-                .timeout(Duration.ofMinutes(10))
-                .temperature(0.2)
-                .topP(1d)
-                .frequencyPenalty(0d)
-                .presencePenalty(0d)
-                .maxTokens(12000)
+                .timeout(Duration.ofMinutes(ETL_PROCESSING_TIMEOUT_MINUTES))
+                .temperature(ETL_PROCESSING_TEMPERATURE)
+                .topP(ETL_PROCESSING_TOP_P)
+                .frequencyPenalty(ETL_PROCESSING_FREQUENCY_PENALTY)
+                .presencePenalty(ETL_PROCESSING_PRESENCE_PENALTY)
+                .maxTokens(ETL_PROCESSING_MAX_TOKENS)
                 .build();
     }
 
+    /**
+     * Creates and configures a generic chat language model using OpenAI
+     * API-compatible settings.
+     * 
+     * This method builds an OpenAI chat model with configuration parameters
+     * retrieved from
+     * the application store, including custom URL, API key, model name, and various
+     * ETL
+     * processing parameters such as timeout, temperature, and token limits.
+     * 
+     * @return ChatLanguageModel a configured OpenAI chat model instance ready for
+     *         use
+     * @throws Exception if there's an error accessing configuration or building the
+     *                   model
+     */
     public static ChatLanguageModel getGenericChatLanguageModel() throws Exception {
-        return OpenAiChatModel.builder() // custom route to openAi chat models and local servers
+        return OpenAiChatModel.builder() // Generic LLM must use OpenAiChatModel api models
                 .baseUrl(AppStore.getInstance().getLlmConfig().getGenericAi().getCustomUrl())
                 .apiKey(AppStore.getInstance().getLlmConfig().getGenericAi().getApiKey())
                 .modelName(AppStore.getInstance().getLlmConfig().getGenericAi().getModelName())
-                .timeout(Duration.ofMinutes(10))
-                .temperature(0.2)
-                .topP(1d)
-                .frequencyPenalty(0d)
-                .presencePenalty(0d)
-                .maxTokens(12000)
+                .timeout(Duration.ofMinutes(ETL_PROCESSING_TIMEOUT_MINUTES))
+                .temperature(ETL_PROCESSING_TEMPERATURE)
+                .topP(ETL_PROCESSING_TOP_P)
+                .frequencyPenalty(ETL_PROCESSING_FREQUENCY_PENALTY)
+                .presencePenalty(ETL_PROCESSING_PRESENCE_PENALTY)
+                .maxTokens(ETL_PROCESSING_MAX_TOKENS)
                 .build();
     }
 
+    /**
+     * Retrieves a configured ChatLanguageModel instance for AI summary operations.
+     * The specific implementation returned depends on the LLM type configured in
+     * the application settings.
+     * 
+     * @return a ChatLanguageModel instance configured for summary operations
+     * @throws Exception                if there's an error creating the language
+     *                                  model or if the configured LLM type is
+     *                                  unsupported
+     * @throws IllegalArgumentException if the LLM type specified in configuration
+     *                                  is not supported
+     */
     public static ChatLanguageModel getAiSummaryLanguageModel() throws Exception {
         var llmType = AppStore.getStartConfigs().getApp().getLlmType();
         switch (llmType) {
@@ -84,34 +186,102 @@ public class AiHelper {
         }
     }
 
+    /**
+     * Creates and configures an OpenAI chat language model specifically optimized
+     * for text summarization tasks.
+     * 
+     * This method builds an OpenAI chat model with predefined parameters suitable
+     * for generating
+     * summaries, including specific temperature, token limits, and penalty settings
+     * to ensure
+     * concise and relevant output.
+     * 
+     * @return A configured {@link ChatLanguageModel} instance ready for
+     *         summarization operations
+     * @throws Exception if there's an error accessing the LLM configuration from
+     *                   AppStore,
+     *                   or if the OpenAI model configuration is invalid
+     */
     public static ChatLanguageModel getOpenAiSummaryLanguageModel() throws Exception {
         return OpenAiChatModel.builder()
                 .baseUrl(AppStore.getInstance().getLlmConfig().getOpenai().getCustomUrl())
                 .apiKey(AppStore.getInstance().getLlmConfig().getOpenai().getApiKey())
                 .modelName(AppStore.getInstance().getLlmConfig().getOpenai().getModelName().getModelName())
-                .timeout(Duration.ofMinutes(10))
-                .temperature(0.5)
-                .topP(0.9) // recorta as caudas
-                .frequencyPenalty(0.4)
-                .presencePenalty(0.4)
-                .maxTokens(10000)
+                .timeout(Duration.ofMinutes(SUMMARY_MODEL_TIMEOUT_MINUTES))
+                .temperature(SUMMARY_MODEL_TEMPERATURE)
+                .topP(SUMMARY_MODEL_TOP_P)
+                .frequencyPenalty(SUMMARY_MODEL_FREQUENCY_PENALTY)
+                .presencePenalty(SUMMARY_MODEL_PRESENCE_PENALTY)
+                .maxTokens(SUMMARY_MODEL_MAX_TOKENS)
                 .build();
     }
 
+    /**
+     * Creates and configures a generic AI language model specifically optimized for
+     * text summarization tasks.
+     * 
+     * <p>
+     * This method builds an OpenAI-compatible chat model using configuration
+     * parameters from the
+     * application store. The model is configured with specific timeout,
+     * temperature, and token limits
+     * suitable for summarization operations.
+     * </p>
+     * 
+     * <p>
+     * The model configuration includes:
+     * </p>
+     * <ul>
+     * <li>Custom base URL and API key from the generic AI configuration</li>
+     * <li>Predefined timeout of {@value #SUMMARY_MODEL_TIMEOUT_MINUTES}
+     * minutes</li>
+     * <li>Temperature, topP, frequency penalty, and presence penalty settings
+     * optimized for summarization</li>
+     * <li>Maximum token limit defined by {@value #SUMMARY_MODEL_MAX_TOKENS}</li>
+     * </ul>
+     * 
+     * @return a configured {@link ChatLanguageModel} instance ready for text
+     *         summarization tasks
+     * @throws Exception if there's an error accessing the configuration or building
+     *                   the model
+     * @see AppStore#getLlmConfig()
+     * @see OpenAiChatModel.Builder
+     */
     public static ChatLanguageModel getGenericAiSummaryLanguageModel() throws Exception {
-        return OpenAiChatModel.builder() // custom route to openAi chat models and local servers
+        return OpenAiChatModel.builder() // Generic LLM must use OpenAiChatModel api models
                 .baseUrl(AppStore.getInstance().getLlmConfig().getGenericAi().getCustomUrl())
                 .apiKey(AppStore.getInstance().getLlmConfig().getGenericAi().getApiKey())
                 .modelName(AppStore.getInstance().getLlmConfig().getGenericAi().getModelName())
-                .timeout(Duration.ofMinutes(10))
-                .temperature(0.5)
-                .topP(0.9) // recorta as caudas
-                .frequencyPenalty(0.4)
-                .presencePenalty(0.4)
-                .maxTokens(10000)
+                .timeout(Duration.ofMinutes(SUMMARY_MODEL_TIMEOUT_MINUTES))
+                .temperature(SUMMARY_MODEL_TEMPERATURE)
+                .topP(SUMMARY_MODEL_TOP_P)
+                .frequencyPenalty(SUMMARY_MODEL_FREQUENCY_PENALTY)
+                .presencePenalty(SUMMARY_MODEL_PRESENCE_PENALTY)
+                .maxTokens(SUMMARY_MODEL_MAX_TOKENS)
                 .build();
     }
 
+    /**
+     * Generates a generic summary of an image using OpenAI's vision model.
+     * 
+     * This method processes a base64-encoded image and returns a JSON-formatted
+     * summary
+     * using the configured OpenAI chat model with vision capabilities.
+     * 
+     * @param base64Image the base64-encoded string representation of the image to
+     *                    be summarized
+     * @param mimeType    the MIME type of the image (e.g., "image/jpeg",
+     *                    "image/png")
+     * @return a JSON-formatted string containing the image summary generated by the
+     *         AI model
+     * @throws IllegalArgumentException if base64Image or mimeType is null
+     * @throws Exception                if there's an error during the AI processing
+     *                                  or network communication
+     * 
+     * @see OpenAiChatModel
+     * @see ImageContent
+     * @see ResponseFormat
+     */
     public static String genericImageSummary(String base64Image, String mimeType) throws Exception {
         if (base64Image == null || mimeType == null) {
             throw new IllegalArgumentException("base64Image and imageExtension must not be null");
