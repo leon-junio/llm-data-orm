@@ -18,7 +18,13 @@ Para compilar o código e buildar a aplicação execute o seguinte em um termina
   .\mvnw package
 ``` 
 
+## Modelos selecionados para teste
+- `dolphin-2.9` – Modelo de código aberto baseado no `LLaMA` ([https://huggingface.co/cognitivecomputations/dolphin-2.9-llama3-8b](https://huggingface.co/cognitivecomputations/dolphin-2.9-llama3-8b));
+- `qwen-2.5-max` – Modelo de uso livre treinado pela `Alibaba` ([https://qwenlm.github.io/blog/qwen2.5-max/](https://qwenlm.github.io/blog/qwen2.5-max/));
+- `gpt-4o` – Modelo de uso restrito treinado pela `OpenAI` ([https://explodingtopics.com/blog/gpt-parameters](https://explodingtopics.com/blog/gpt-parameters));
+- `gemini-2.5-flash` – Modelo restrito treinado pela `Google` ([https://cloud.google.com/vertex-ai/generative-ai/docs/models/gemini/2-5-flash](https://cloud.google.com/vertex-ai/generative-ai/docs/models/gemini/2-5-flash));
+- `mistral-small-3.1-24b` – Modelo de uso livre treinado pela `Mistral` ([https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503](https://huggingface.co/mistralai/Mistral-Small-3.1-24B-Instruct-2503)).
+
 ## Autores
 
 - [Leon](https://www.github.com/leon-junio)
-
