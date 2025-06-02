@@ -2,6 +2,7 @@ app:
   stopIfInvalidatedDocument: false
   maxExecutorsThreads: 16
   maxETLProcessors: 3
+  validateLLMResultsWithLLM: true
   llmType: "GENERIC"
   llmConfig:
     genericAi:
