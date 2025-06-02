@@ -10,6 +10,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import com.fasterxml.jackson.databind.JsonNode;
+import com.leonjr.ldo.app.consts.AppConsts;
 import com.leonjr.ldo.app.helper.LoggerHelper;
 import com.leonjr.ldo.database.handler.DBHelper;
 import com.leonjr.ldo.database.models.TableDescription;
@@ -21,8 +22,10 @@ import com.leonjr.ldo.parsing.etl.ETLParser;
 import com.leonjr.ldo.parsing.etl.interfaces.ETLProcessor;
 import com.leonjr.ldo.parsing.etl.models.ETLDocument;
 import com.leonjr.ldo.parsing.llm.AiHelper;
+import com.leonjr.ldo.parsing.llm.prompts.PromptTexts;
 import com.leonjr.ldo.validation.ETLValidation;
 import com.leonjr.ldo.validation.helper.TestSetHelper;
+import com.leonjr.ldo.validation.models.LLMValidationResult;
 import com.leonjr.ldo.validation.models.LocalSimpleValidationResult;
 
 import ch.qos.logback.core.util.Duration;
@@ -318,10 +321,10 @@ public final class ETLPipeline {
                 }
                 var conformity = validationResult.getConformityAndUnknownRate().getLeft();
                 var unknownRate = validationResult.getConformityAndUnknownRate().getRight();
-                if (conformity < 0.9) {
+                if (conformity < AppConsts.ETL_VALIDATION_CONFORMITY_THRESHOLD) {
                     throw new Exception("Execution stopped due to conformity rate: " + conformity);
                 }
-                if (unknownRate > 0.1) {
+                if (unknownRate > AppConsts.ETL_VALIDATION_UNKNOWN_THRESHOLD) {
                     throw new Exception("Execution stopped due to unknown rate: " + unknownRate);
                 }
 
@@ -329,6 +332,87 @@ public final class ETLPipeline {
                 throw new Exception("Found invalid validation result!");
             }
         }
+    }
+
+    /**
+     * Validates the ETL (Extract, Transform, Load) processing results using a Large
+     * Language Model (LLM).
+     * 
+     * This method performs validation on all documents that have been processed
+     * through the ETL pipeline.
+     * For each validated document, it extracts the context (summarized metadata),
+     * generated response,
+     * and original query to perform LLM-based validation using the ETLValidation
+     * service.
+     * 
+     * The validation process:
+     * 1. Checks if there are documents to validate
+     * 2. For each document, validates that context, generated response, and
+     * original query are not null/empty
+     * 3. Calls ETLValidation.validateLLMOutput() for each valid document
+     * 4. Logs validation results for each document
+     * 5. Checks if all documents meet the acceptance threshold defined in
+     * AppConsts.LLM_VALIDATION_ACCEPTANCE_THRESHOLD
+     * 6. Throws an exception if any document fails validation, providing details
+     * about rejected documents
+     * 
+     * @throws Exception if any document fails LLM validation or if validation
+     *                   parameters are invalid
+     * 
+     * @see ETLValidation#validateLLMOutput(String, String, String)
+     * @see LLMValidationResult#isAccepted(double)
+     * @see AppConsts#LLM_VALIDATION_ACCEPTANCE_THRESHOLD
+     */
+    public void validateETLResultsWithLLM() throws Exception {
+        if (!AppStore.getStartConfigs().getApp().isValidateLLMResultsWithLLM()) {
+            LoggerHelper.logger.warn("Skipping LLM validation due to validateLLMResultsWithLLM being false.");
+            return;
+        }
+        LoggerHelper.logger.info("Validating parsing process with LLM...");
+        if (validatedDocuments.isEmpty()) {
+            LoggerHelper.logger.warn("No documents to validate!");
+            return;
+        }
+        var validationResults = new ArrayList<LLMValidationResult>();
+        for (var etlDocument : validatedDocuments) {
+            String context = etlDocument.getDocument().metadata().getString("summarized") + "\nTable description: "
+                    + tableDescription.toJson();
+            String generatedResponse = etlDocument.getParsedResponse();
+            String originalQuery = PromptTexts.ETL_PROCESS_TEXT;
+            if (context == null || context.isEmpty()) {
+                LoggerHelper.logger.error("Context is null or empty for document "
+                        + rawDocuments.indexOf(etlDocument));
+                continue;
+            }
+            if (generatedResponse == null || generatedResponse.isEmpty()) {
+                LoggerHelper.logger.error("Generated response is null or empty for document "
+                        + rawDocuments.indexOf(etlDocument));
+                continue;
+            }
+            if (originalQuery == null || originalQuery.isEmpty()) {
+                LoggerHelper.logger.error("Original query is null or empty for document "
+                        + rawDocuments.indexOf(etlDocument));
+                continue;
+            }
+            var validationResult = ETLValidation.validateLLMOutput(context, generatedResponse, originalQuery);
+            LoggerHelper.logger.info("Document " + rawDocuments.indexOf(etlDocument) + ":");
+            LoggerHelper.logger.info("Validation response:" + System.lineSeparator() + validationResult);
+            validationResults.add(validationResult);
+        }
+        boolean allAccepted = validationResults.stream()
+                .allMatch(result -> result.isAccepted(AppConsts.LLM_VALIDATION_ACCEPTANCE_THRESHOLD));
+        if (!allAccepted) {
+            StringBuilder errorMessage = new StringBuilder("Some documents were rejected by LLM validation:\n");
+            for (int i = 0; i < validationResults.size(); i++) {
+                var result = validationResults.get(i);
+                if (!result.isAccepted(AppConsts.LLM_VALIDATION_ACCEPTANCE_THRESHOLD)) {
+                    errorMessage.append("Document ").append(i).append(": ")
+                            .append(result.simpleValidationResult()).append("\n");
+                }
+            }
+            throw new Exception(errorMessage.toString());
+        }
+        LoggerHelper.logger.info("All documents passed LLM validation successfully!");
     }
 
     /**
@@ -382,7 +466,12 @@ public final class ETLPipeline {
         // test parsing process
         endExecutionTime = System.currentTimeMillis();
         // print tests and validations
+        var validationStartTime = System.currentTimeMillis();
         validateETLWithLocalTests();
+        validateETLResultsWithLLM();
+        var validationEndTime = System.currentTimeMillis();
+        LoggerHelper.logger.info("Validation time: "
+                + Duration.buildByMilliseconds(validationEndTime - validationStartTime));
         // insert data into database
         insertETLIntoDatabase();
         debugETLResults();

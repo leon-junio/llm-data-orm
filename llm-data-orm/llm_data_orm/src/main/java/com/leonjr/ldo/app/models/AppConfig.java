@@ -14,6 +14,9 @@ public class AppConfig {
     @NotBlank(message = "The LLM type is required")
     private LLMType llmType;
 
+    @NotBlank(message = "The LLM validation type is required")
+    private boolean validateLLMResultsWithLLM;
+
     @Null
     private LLMConfig llmConfig;
 

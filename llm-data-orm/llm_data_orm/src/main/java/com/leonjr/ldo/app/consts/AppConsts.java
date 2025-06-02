@@ -20,4 +20,9 @@ public class AppConsts {
             "                                                                                                                                           \r\n"
             + //
             "                                                                                                                                          ";
+
+    public final static double ETL_VALIDATION_UNKNOWN_THRESHOLD = 0.1;
+    public final static double ETL_VALIDATION_CONFORMITY_THRESHOLD = 0.9;
+    public final static double LLM_VALIDATION_ACCEPTANCE_THRESHOLD = 0.9;
+
 }

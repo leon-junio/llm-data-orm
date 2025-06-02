@@ -5,6 +5,7 @@ import java.time.Duration;
 import com.leonjr.ldo.AppStore;
 import com.leonjr.ldo.app.helper.LoggerHelper;
 import com.leonjr.ldo.parsing.etl.interfaces.ETLProcessor;
+import com.leonjr.ldo.parsing.etl.interfaces.LLMValidation;
 
 import dev.langchain4j.data.message.ImageContent;
 import dev.langchain4j.data.message.TextContent;
@@ -72,6 +73,22 @@ public class AiHelper {
     public static ETLProcessor buildNewAssistent() throws Exception {
         var chatModel = getChatModel();
         return AiServices.builder(ETLProcessor.class)
+                .chatLanguageModel(chatModel).build();
+    }
+
+    /**
+     * Creates and configures a new LLMValidation instance using AI services.
+     * 
+     * This method builds a validator that leverages a chat language model to perform
+     * validation operations. The validator is constructed using the AiServices builder
+     * pattern with the configured chat model obtained from getChatModel().
+     * 
+     * @return a new LLMValidation instance configured with the chat language model
+     * @throws Exception if there's an error during chat model retrieval or validator construction
+     */
+    public static LLMValidation buildNewValidator() throws Exception {
+        var chatModel = getChatModel();
+        return AiServices.builder(LLMValidation.class)
                 .chatLanguageModel(chatModel).build();
     }
 

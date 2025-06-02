@@ -187,4 +187,89 @@ public class PromptTexts {
             -> Your response should be a plain text that summarizes the image content in a clear and informative manner.
             """;
 
+    public static final String VALIDATE_LLM_OUTPUT = """
+            ROLE: LLM Response Semantic Validator and Quality Assessor (Summary-Based).
+            # KEY PRINCIPLES
+            1. SUMMARY-BASED ACCURACY: Validate the generated response strictly against the **document_summary** provided. The summary is considered the ground truth for this validation step.
+            2. CRITERIA-DRIVEN EVALUATION: Assess the response based on pre-defined qualitative criteria: coherence, completeness (relative to summary), fidelity (to summary), hallucination (beyond summary), self-awareness, and honesty.
+            3. HYBRID APPROACH INSPIRED: Understand that this validation is part of a system combining traditional QA with LLM evaluations to enhance reliability and mitigate errors.
+            4. OBJECTIVE METRICS: Convert qualitative assessments into a quantitative, aggregated reliability score.
+
+            You will receive the **document_summary** (a summary of the original source text or document. This summary serves as the ground truth for validating the generated_response).
+            You will receive the **generated_response** (the output from another LLM that needs validation).
+            You will (optionally) receive the **original_query** or **task_description** that was given to the first LLM to produce the generated_response. This helps in assessing scope and relevance against the summary.
+
+            Your evaluation must focus on how well the generated_response reflects the **document_summary** according to the specified criteria. Be mindful that the summary itself is a condensed version of a larger document.
+
+            ### Your Task:
+            1.  **Analyze Coherence**: Does the generated_response flow logically and make sense internally and in relation to the **document_summary**?
+            2.  **Evaluate Completeness (Abrangência de Cobertura)**: Does the generated_response cover all relevant aspects *mentioned in the **document_summary*** pertinent to the implicit or explicit original_query/task? Are there significant omissions *from what is available in the summary*?
+            3.  **Assess Fidelity**: Is the generated_response a faithful representation of the information found *in the **document_summary***? Are there any distortions, misinterpretations, or alterations of facts *as presented in the summary*?
+            4.  **Measure Degree of Hallucination**: Does the generated_response contain any information that is NOT supported by or cannot be reasonably inferred from *the **document_summary***? Quantify this aspect.
+            5.  **Check for Self-Awareness (Reconhecimento de Limitações)**: If applicable (e.g., if the original_query was ambiguous or data was lacking *in the **document_summary***), does the generated_response acknowledge its own limitations or the limitations of the information *available in the summary*?
+            6.  **Verify Honesty (Capacidade de Rejeitar Solicitações Fora do Escopo)**: If the original_query/task was outside the reasonable scope of *the **document_summary*** or capabilities based on it, did the generated_response appropriately decline or indicate an inability to respond comprehensively, or did it attempt to generate a potentially inaccurate/irrelevant answer?
+            7.  **Aggregate Metrics**: Convert your evaluations for each criterion into a component score (e.g., on a scale of 0 to 100). Then, calculate an overall `aggregated_reliability_score`. The target for data confirmation is an `aggregated_reliability_score` > 95%.
+            8.  **Determine Acceptance**: Based on the `aggregated_reliability_score`, determine if the `generated_response` is "ACCEPTED" or "REJECTED".
+
+            ### Response Format:
+            - Return a single valid JSON object containing your evaluation.
+            - The JSON object must include:
+                - `coherenceScore` (numeric, e.g., 0-100)
+                - `completenessScore` (numeric, e.g., 0-100)
+                - `fidelityScore` (numeric, e.g., 0-100)
+                - `freedomFromHallucinationScore` (numeric, e.g., 0-100, where 100 means no hallucination)
+                - `selfAwarenessScore` (numeric, e.g., 0-100)
+                - `honestyScore` (numeric, e.g., 0-100)
+                - `aggregatedReliabilityScore` (numeric, e.g., 0-100)
+                - `acceptanceStatus` (string: "ACCEPTED" or "REJECTED")
+                - `justification` (string: a brief explanation for your scores and decision, highlighting key observations relative to the summary)
+
+            ### Example Input:
+            {
+              "document_summary": "A quick brown fox, named Max, is known for jumping over a lazy dog. This showcases all English letters.",
+              "generated_response": "Max, the fox, leaps over the lazy dog. This sentence demonstrates the alphabet.",
+              "original_query": "Describe the fox's action and its significance."
+            }
+
+            ### Example Output:
+            {
+              "coherenceScore": 95,
+              "completenessScore": 90, // Slightly less detail on "all English letters" than summary but still good.
+              "fidelityScore": 98,
+              "freedomFromHallucinationScore": 100,
+              "selfAwarenessScore": 100,
+              "honestyScore": 100,
+              "aggregatedReliabilityScore": 97.17,
+              "acceptanceStatus": "ACCEPTED",
+              "justification": "Response is coherent and faithful to the provided summary. Minor detail on alphabet less specific but acceptable."
+            }
+
+            ### Example Input (with hallucination relative to summary):
+            {
+              "document_summary": "The sky appears blue due to a phenomenon called Rayleigh scattering, which disperses sunlight.",
+              "generated_response": "The sky is blue because it reflects the oceans. This was proven by Dr. Smith in 1990.",
+              "original_query": "Explain why the sky is blue and who discovered it."
+            }
+
+            ### Example Output (with hallucination relative to summary):
+            {
+              "coherenceScore": 70,
+              "completenessScore": 50, // Misses Rayleigh scattering mentioned in summary.
+              "fidelityScore": 10,  // Incorrect reason and fabricated details not in summary.
+              "freedomFromHallucinationScore": 20, // Dr. Smith and 1990 are not in the summary.
+              "selfAwarenessScore": 0,
+              "honestyScore": 80, // Attempted to answer query, but hallucinated details for the 'who discovered it' part.
+              "aggregatedReliabilityScore": 41.67,
+              "acceptanceStatus": "REJECTED",
+              "justification": "Response significantly deviates from the summary, providing incorrect reasons and fabricated details (Dr. Smith, ocean reflection) not supported by the summary."
+            }
+
+            ### EXPLICIT PROHIBITIONS
+                Never add information not present in the **document_summary** or the generated_response when making your assessment.
+                Your assessment must be based SOLELY on the provided inputs (document_summary, generated_response, original_query).
+                Do not attempt to correct the generated_response, only evaluate it against the **document_summary**.
+
+            Does not use markdown in the response. The response must be a valid JSON object.
+            """;
+
 }
