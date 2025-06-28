@@ -1,0 +1,302 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%
+% Leon Junio Martins Ferreira
+%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\documentclass[12pt]{article}
+
+\usepackage{sbc-template}
+ \usepackage{xcolor}
+
+\usepackage{amsmath}
+\usepackage{algpseudocode}
+\usepackage{algorithm}
+
+\usepackage{graphicx,url}
+\usepackage[brazil]{babel}   
+\usepackage[utf8]{inputenc}  
+
+\newcommand{\hnc}[1] {\textcolor{teal}{#1}}
+
+\linespread{0.97}
+
+\sloppy
+
+\title{Abordagem de Migração de Dados Não Estruturados para Bancos de Dados Relacionais Usando Modelos de Linguagem de Larga Escala Pré Treinados} 
+
+\author{Leon J. M. Ferreira\inst{1}, Hayala N. Curto\inst{1} }
+
+
+\address{Instituto de Ciências Exatas e Informática\\
+  Ciência da Computação – Pontifícia Universidade Católica de Minas Gerais (PUC-MG)\\
+  Belo Horizonte, MG – Brasil
+  \email{leon.ferreira@sga.pucminas.br}
+}
+
+\begin{document} 
+
+\maketitle
+
+\begin{resumo}
+Este trabalho propõe uma abordagem automatizada para a migração de dados não estruturados a bancos de dados relacionais, utilizando modelos de linguagem de larga escala (\textit{LLMs}). A metodologia apresenta técnicas para extrair, validar e transformar dados textuais complexos em entidades estruturadas. Foram avaliados cinco modelos (GPT-4o, Qwen-2.5-Max, Dolphin-2.9, Gemini-2.5-Flash e Mistral-3.1-24b) em três conjuntos distintos de dados (\textit{QuestionsDB}, \textit{SoccerDB} e \textit{SpotifyDB}), com variações de formato, volume e complexidade. Os resultados indicam que modelos com maior capacidade contextual alcançam métricas elevadas, mesmo em cenários com milhares de instâncias e múltiplos pedaços de texto processados em paralelo. Ao alinhar a escolha do modelo ao conjunto de dados, a proposta demonstra viabilidade prática para uso em fluxos modernos de dados, especialmente em tarefas como \textit{web scraping}, ingestão documental e transformação semântica escalável.
+\end{resumo}
+
+\section{Introdução}
+
+A migração de dados não estruturados para sistemas de banco de dados modernos tornou-se uma necessidade cada vez mais frequente no cenário tecnológico atual. Com o aumento exponencial na produção de dados provenientes de fontes diversas como textos, documentos, tabelas e multimídia, as empresas enfrentam o desafio de transformar tais dados em informações estruturadas para facilitar a análise e o processamento em sistemas relacionais tradicionais \cite{schelter2018}. Conforme discutido por Schelter et al. (2018), abordagens manuais de migração são propensas a erros humanos, comprometendo a integridade e aumentando o tempo necessário para o processamento. 
+Para mitigar esses desafios, diversas ferramentas de migração de dados estruturados têm sido desenvolvidas, como o Talend Open Studio \footnote{\url{https://www.talend.com/products/talend-open-studio/}} ou o Apache NiFi \footnote{\url{https://nifi.apache.org/}}. Ambas se destacam por sua capacidade de automação de fluxos de dados em tempo real, sendo especialmente úteis em ambientes que requerem alta escalabilidade e flexibilidade. Porém, são ferramentas que necessitam de modelagem e controle humano nas etapas de extração e transformação de informação.
+
+O avanço de tecnologias da IA generativa abre novas oportunidades para automação de tarefas complexas, que discutem aplicações em tradução automática e transformação de dados \cite{brants2023}. 
+A aplicação de IA no contexto de migração de dados não estruturados pode automatizar o processo de extração e transformação de dados, garantindo a integridade e a consistência dos mesmos durante a transição \cite{vanderputten2024}. O processo de \textbf{ETL (Extract, Transform, Load)} \cite{kimball2004} é fundamental nesse contexto, pois envolve a extração de dados de sistemas de origem, a aplicação de transformações para garantir a qualidade e a conformidade, e o carregamento dos dados em sistemas de destino.
+
+Os modelos de linguagem de grande escala (\textit{LLMs}) \cite{gao2020} podem desempenhar um papel crucial na automação do processo de \textit{ETL}. Esses modelos pré-treinados utilizam aprendizado profundo para interpretar textos que representam documentos e gerar representações estruturadas adequadas para bancos de dados relacionais. Modelos como \textit{GPT}, \textit{Gemini}, \textit{Mistral} e \textit{Dolphin}, amplamente utilizados para tarefas de geração de texto e classificação \cite{vanderputten2024}, podem ser utilizados também para a identificação de entidades, oferecendo um meio-termo entre análise e extração de padrões em textos \cite{devlin2019}.
+
+\begin{figure}[htb]
+\centering	
+	\includegraphics[scale=0.4]{resources/etl_for_documents.png}
+\caption{Definição do Fluxo ETL para documentos não estruturados} 
+\label{fig:Fig1}
+\end{figure}
+
+Este estudo tem como objetivo avaliar a viabilidade da utilização de \textit{LLMs} no contexto da migração de dados não estruturados para formatos estruturados, com ênfase na preservação da integridade dos dados e na capacidade de análise de grandes volumes de informação. Os resultados obtidos em testes práticos permitirão definir a viabilidade do uso de modelos de linguagem para extrair, mapear e validar entidades em processos reais de \textit{ETL} para documentos.
+
+O restante do trabalho está organizado da seguinte forma: inicialmente, realiza-se uma revisão dos trabalhos relacionados. Em seguida, descreve-se a metodologia proposta para a migração de dados, detalhando cada etapa do processo. Depois, são apresentados os testes conduzidos para avaliar a abordagem, detalhando os diferentes conjuntos de dados e os modelos de linguagem empregados, seguidos por uma análise comparativa dos resultados obtidos em cada cenário. Por fim, o artigo encerra-se com as conclusões sobre a viabilidade da metodologia, além de sugestões para trabalhos futuros, indicando melhorias e novas linhas de pesquisa a serem exploradas.
+
+\section{Trabalhos relacionados}
+
+A evolução dos processos de \textit{ETL} (Extração, Transformação e Carga) tem sido marcada por uma busca contínua por automação para superar os desafios de escala e confiabilidade. Tradicionalmente, esses processos eram manuais e propensos a erros, o que compromete a integridade dos dados e aumenta o tempo de processamento. Nesse contexto, Schelter et al. \cite{schelter2018} apresentaram uma metodologia de verificação de qualidade de dados automatizada para sistemas complexos, que reduz o impacto de erros humanos e melhora a integridade e precisão dos dados processados.
+
+Avançando nessa linha de automação, a aplicação de inteligência artificial (IA) e aprendizado de máquina começou a ganhar força, especialmente no contexto de governança e gerenciamento de dados mestres. Riesener et al. \cite{riesener2022}, por exemplo, propuseram uma metodologia para gestão automatizada de dados mestres utilizando IA, que facilita o processamento e melhora a qualidade dos dados migrados. Juntos, esses trabalhos estabelecem a importância da automação para garantir a qualidade e a consistência em pipelines de dados, evoluindo de sistemas de verificação para a aplicação direta de IA.
+
+Com o recente avanço da IA generativa, os modelos de linguagem de larga escala (\textit{LLMs}) surgiram como uma tecnologia promissora para preencher essa lacuna. Brants et al. \cite{brants2023} destacam que os \textit{LLMs}, já amplamente aplicados em geração de texto e análise de documentos, também permitem maior flexibilidade ao compreender e converter diferentes tipos de mídia, apontando para seu potencial na transformação de dados não estruturados em formatos estruturados presente neste trabalho.
+
+Essa capacidade tem sido explorada em aplicações práticas que visam modernizar a interação com sistemas de dados. Metodologias recentes exploram \textit{LLMs} para democratizar o acesso e a manipulação de dados, como descrito por Korat \cite{korat2024langchain}, que aponta a capacidade do \textit{LangChain} em transformar consultas de linguagem natural em \textit{SQL}. De forma similar, Chiara Van Der Putten \cite{vanderputten2024} investigou o uso de IA generativa em processos clássicos de \textit{ETL}, mas com foco em dados já estruturados, produzindo como artefato final um documento \textit{XML} que espelha o esquema relacional de origem.
+
+Embora essas abordagens demonstrem o valor dos \textit{LLMs} em pipelines de dados, elas operam em cenários onde a estrutura de dados de origem ou de destino já é bem definida. A proposta de Korat \cite{korat2024langchain} facilita a consulta a dados estruturados, e o trabalho de Van Der Putten \cite{vanderputten2024} otimiza a migração entre sistemas estruturados. A principal contribuição deste trabalho, portanto, é diferenciar-se ao focar na migração de dados fundamentalmente não estruturados (texto livre, tabelas em \textit{PDFs}, etc.) para um modelo relacional fora do fluxo de \textit{ETL} tradicional, utilizando a capacidade semântica dos \textit{LLMs} como o motor central do processo de transformação e estruturação.
+
+\section{Metodologia}
+
+A abordagem enfrentou desafios relacionados à alta complexidade envolvida na conversão de dados não estruturados de documentos para um modelo relacional com dezenas de atributos, além do elevado custo computacional decorrente do uso de \textit{LLMs} para análise semântica em larga escala. Para mitigar essas limitações, a metodologia proposta adota uma estratégia híbrida, que combina técnicas clássicas de processamento de documentos com otimizações específicas para modelos de linguagem. As etapas desse processo de transformação são representadas na Figura \ref{fig:Fig2}.
+
+\begin{figure}[htb]
+\centering	
+	\includegraphics[scale=0.35]{resources/metodologia.png}
+\caption{Representação de cada etapa da abordagem}
+\label{fig:Fig2}
+\end{figure}
+
+\subsection{Extração inicial dos Dados}
+
+A primeira etapa consiste na extração dos dados estruturais do banco de dados relacional alvo. Foram utilizadas técnicas de reflexão de banco de dados \cite{date2004introduction}, onde são recuperadas informações críticas como nomenclatura de colunas, tipos de dados específicos do \textit{SGBD}, restrições de nulidade, valores padrão e mecanismos de auto-incremento. Essa abordagem permitiu capturar não apenas a sintaxe, mas também a semântica das regras de negócios implementadas na estrutura das tabelas.
+
+A representação estruturada em \textit{JSON} gerada nesta fase serve como esquema diretor para todo o processo de transformação. A estrutura formalizada atua como contrato de dados, garantindo que as entidades geradas respeitem a integridade referencial e estrutural do modelo relacional, mesmo quando originárias de fontes não estruturadas.
+
+A segunda etapa do processo concentrou-se na transformação de dados heterogêneos em representação textual unificada. A detecção automática de formatos de documentos e a recuperação de metadados estruturados (autor, datas, idioma) permitiram estratégias de segmentação especializadas como divisão por linhas para documentos paginados, expressões regulares para estruturas \textit{JSON/XML}, e métodos recursivos aplicados a \textit{markdown e HTML}. Cada texto extraído no processo anterior foi submetido a um pós-processamento, responsável por tratar de remover linhas vazias, nulas ou caracteres inválidos.
+
+\subsection{Validação e sumarização dos Dados não Estruturados}
+
+A etapa seguinte é responsável por identificar se os documentos enviados para o processo fazem parte do conjunto descrito pela base de dados. Para isso, foram realizadas consultas a modelos generativos de linguagem que atuam como mecanismo de verificação semântica, implementando um paradigma de \textit{Schema-Aware Validation} \cite{batini2016data}. Através de \textit{prompts} estruturados com restrições contextuais \cite{liu2023prompt}, o sistema avalia a relevância documental em relação ao esquema relacional alvo, combinando análise léxica padrão com compreensão contextual. A implementação dessa abordagem utilizou a técnica de processamento paralelo massivo, onde múltiplos processos avaliam documentos simultaneamente.
+
+Os agentes responsáveis por cada instância de validação devem retornar um texto contendo informações básicas juntamente com o sumário do assunto principal dos documentos validados com sucesso. Com esse agregador de contexto adicionado aos metadados, o agente responsável por mapear entidades é guiado a inferir informações que podem não estar presentes no grupo do \textit{chunk} atual, como nomes de objetos, tópico principal do arquivo e até dados intrínsecos ao processo de \textit{ETL}. Essa abordagem é baseada na solução \texttt{Multi-Vector Retriever} \footnote{\url{https://blog.langchain.dev/semi-structured-multi-modal-rag/}} descrita em um artigo no blog \textit{Langchain}, que pode ser vista na figura \ref{fig:Fig3}.
+
+\begin{figure}[htb]
+\centering	
+	\includegraphics[scale=0.4]{resources/multi_vector_retriever_langchain.png}
+\caption{Imagem proposta pelos autores do Multi-Vector Retriever}
+\label{fig:Fig3}
+\end{figure}
+
+Ao final do processo anterior, empregaram-se técnicas de \textit{chunking} inteligente \cite{cohere_chunking}, particionando o texto bruto extraído em unidades textuais coerentes que preservam relações semânticas. Essa abordagem mitiga problemas de truncamento em modelos de IA \cite{meng2024ranked}, dividindo o texto em pedaços menores sem remover informações. Nesta etapa do processo, foi fundamental evitar o uso de técnicas de vetorização com indexação de texto, como as propostas por \cite{cohere_chunking}, frequentemente aplicadas em sistemas de recuperação aumentada por geração (\textit{RAG}). Esse tipo de abordagem pode resultar em perda irreversível de informações contextuais essenciais, comprometendo irreversivelmente a integridade dos dados e impactando negativamente a acurácia na extração de entidades exatas a partir de conteúdos não estruturados.
+
+\subsection{Mapeamento e Geração das Entidades}
+
+A etapa central do processo de \textit{ETL} implementa um paradigma de \textit{Schema-Guided Generation} \cite{liu2023prompt}, onde modelos generativos de linguagem (\textit{LLMs}) transformam fragmentos textuais em entidades estruturadas alinhadas ao esquema relacional. O processo utilizou a descrição da tabela extraída nos passos anteriores como o contrato de dados, orientando a \textit{LLM} na identificação de padrões no texto que revelam possíveis entidades. 
+
+Os textos de \textit{prompts} no contexto de \textit{ETL} distribuído foram enviados para o modelo a fim de definir um papel claro, explicitar princípios-chave e estabelecer um formato de resposta rígido, incluindo o tipo de dados e as obrigações semânticas \cite{liu2023prompt}, conforme pode ser visto na Tabela 1. O processamento da informação foi feito de forma distribuída, com isolamento de contexto por \textit{chunk}, seguindo o modelo \textit{Map-Reduce-Validate} \cite{dean2004mapreduce}, no qual cada agente é responsável por uma pequena porção da tarefa, que foi executada de forma paralela.
+
+\begin{table}[htb]
+\centering
+\begin{tabular}{|p{4cm}|p{10cm}|}
+\hline
+\textbf{Elemento} & \textbf{Descrição} \\
+\hline
+\textbf{Papel do modelo} & Processador \textit{ETL} distribuído extraindo dados de \textit{chunks}. \\
+\hline
+\textbf{Princípios de controle} & 
+    Isolamento completo de \textit{chunks}, 
+    proibição de suposições com base em partes externas ao \textit{chunk} e
+    rejeição de preenchimento de campos auto-incrementais ou chaves primárias. \\
+\hline
+\textbf{Formato de Saída} & Retornar \texttt{JSON array} válido conforme a descrição da tabela fornecida. \\
+\hline
+\textbf{Reforço de regras} & \textbf{NUNCA} completar IDs, \textbf{NUNCA} assumir dados ausentes, \textbf{NUNCA} fundir objetos parciais. \\
+\hline
+\end{tabular}
+\label{tab:promptTable}
+\caption{Diretrizes no prompt para o mapeador de entidades}
+\end{table}
+
+Seja \(D\) o conjunto de dados a ser processado, \(m = 100\) o tamanho máximo de cada chunk, \(f(c_i)\) a resposta em \textit{JSON} retornada pelo \textit{LLM} e \(R\) o conjunto de entidades mapeadas finais. Particione \(D\) em 
+\[
+k \;=\; \bigl\lceil\tfrac{|D|}{m}\bigr\rceil
+\quad\text{pedaços:}\quad
+\{c_{1},\,c_{2},\,\dots,\,c_{k}\}, 
+\quad |c_{i}|\le m,\;\forall\,i=1,\dots,k.
+\]
+Então,
+\[
+R \;=\; \bigoplus_{i=1}^{k} f(c_{i})
+\;\equiv\; \mathrm{concatenar}\bigl(f(c_{1}),\,f(c_{2}),\,\dots,\,f(c_{k})\bigr),
+\]
+onde as avaliações \(f(c_{1}),\,\dots,\,f(c_{k})\) ocorrem em paralelo.
+
+Esse método apresentou uma melhoria ao usar paralelismo para processar múltiplos \textit{chunks} simultaneamente, reduzindo significativamente o tempo total de execução, pois as requisições ao agente \textit{LLM} são feitas de forma assíncrona. Essa estratégia, implementada por meio de diversos processos em paralelo, permite que o sistema realize várias tarefas simultâneas sem bloquear outras operações.
+
+\subsection{Validação das Entidades Estruturadas}
+
+Para a etapa de validação de entidades é importante empregar uma camada de validação sistemática, como base para validar os verdadeiros positivos, foi necessário empregar um arquivo em \textit{JSON} (\textit{testset}) contendo a estrutura esperada de todas as entidades para o documento avaliado (\textit{ground truth}), no qual as saídas de cada \textit{LLM} são comparadas. Foi necessário garantir a integridade referencial das tabelas no banco de dados por meio da rejeição ativa de inserções que violem restrições de chave primária ou regras de preenchimento automático. O conjunto de métricas selecionadas para validar as entidades geradas abrange medidas clássicas de recuperação de informação como \textit{precision}, \textit{recall}, \textit{F1-score} e \textit{Jaccard Similarity} \cite{Tan2005}, representadas por:
+\begin{align*}
+\text{Precision} &= \frac{\lvert \mathrm{TP}\rvert}{\lvert \mathrm{TP}\rvert + \lvert \mathrm{FP}\rvert}, 
+&
+\text{Recall} &= \frac{\lvert \mathrm{TP}\rvert}{\lvert \mathrm{TP}\rvert + \lvert \mathrm{FN}\rvert}, \\
+\mathrm{F_{1} score} &= 2 \times \frac{\text{Precision} \times \text{Recall}}{\text{Precision} + \text{Recall}},
+\end{align*}
+onde:
+
+\begin{itemize}
+    \item \(\mathrm{TP}\) (True Positives): representam acertos e correspondem ao número de atributos corretamente extraídos pelo modelo LLM que também estão presentes no \textit{testset}.
+    \item \(\mathrm{FP}\) (False Positives): representam extrações incorretas e correspondem ao número de atributos extraídos pelo modelo LLM que não existem ou divergem significativamente dos atributos presentes no \textit{testset}.
+    \item \(\mathrm{FN}\) (False Negatives): representam omissões na extração e correspondem ao número de atributos que estavam presentes no \textit{testset}, mas não foram extraídos pelo modelo LLM.
+\end{itemize}
+
+A sobreposição entre os conjuntos utiliza os pares “campo=valor” \(A\) e \(B\), resultantes das entidades mapeadas pela \textit{LLM} e do \textit{testset}, para definir sua similaridade textual:
+\[
+\mathrm{Jaccard}(A,B) 
+= \frac{\lvert A \cap B\rvert}{\lvert A \cup B\rvert}
+\]
+Para calcular \(\mathrm{TP}\), \(\mathrm{FP}\) e \(\mathrm{FN}\), bem como a interseção na similaridade de Jaccard, utilizou-se correspondência aproximada baseada na distância de Levenshtein \cite{levenshtein1966binary}, considerando equivalentes valores de atributos com pelo menos 80\% de similaridade.
+
+Paralelamente, foram calculados o \textit{Conformity Rate} para medir a aderência dos tipos de entidade ao esquema relacional e a \textit{Unknown Rate} para identificar ocorrências de elementos não mapeados ou incompatíveis. Violações críticas, como \textit{Missing Mandatory Fields} (ausência de campos obrigatórios na entidade relacional) e \textit{Data Type Errors} (erros de tipagem em campos específicos), foram classificadas como falhas bloqueantes, interrompendo o processo de migração.
+
+\subsection{Autoavaliação dos Modelos de Linguagem}
+
+Em complemento à avaliação quantitativa, os mesmos modelos que geraram as entidades foram instruídos a realizar um processo de autoavaliação, examinando a coerência, a completude e, principalmente, a fidelidade das respostas em relação ao texto original. A relevância dessa abordagem é corroborada por estudos como os da \texttt{OpenAI} \cite{OpenAI2023}, que ressaltam seu papel fundamental na mitigação de alucinações.
+
+O problema da alucinação manifesta-se quando o modelo gera informações factualmente incorretas, inconsistentes ou que não podem ser sustentadas pelo conteúdo de origem. No contexto deste trabalho, uma alucinação poderia, por exemplo, levar um modelo a inferir incorretamente o nome de uma coluna qualquer da entidade, ou preencher o campo com dados não existentes no \textit{chunk} de texto, violando as diretrizes explícitas do \textit{prompt}.
+
+Para a validação semântica, a qualidade da resposta do modelo é medida por meio da análise de seu grau de alucinação, do reconhecimento de suas próprias limitações (autoconsciência), da abrangência da cobertura contextual e da capacidade de recusar solicitações inadequadas. Estes indicadores, baseados em trabalhos como os de \cite{Hendrycks2021,Radford2019}, são consolidados em uma métrica de aceitação. Caso o nível de confiabilidade resultante seja inferior a 90\%, o processo de migração daquela entidade é imediatamente interrompido.
+
+\subsection{Migração dos Dados Estruturados}
+
+A etapa de \textit{Load} do processo \textit{ETL} é iniciada após as validações bem-sucedidas das entidades geradas, com foco em inserir cada entidade no banco de dados relacional. Para garantir desempenho e consistência transacional, os registros foram inseridos em lotes (\emph{batch inserts}) configuráveis, de acordo com o parâmetro de \emph{chunk size} definido com o valor de 100 itens por operação. Cada lote foi submetido dentro de uma transação atômica, de modo que falhas em qualquer parte do processo acionem o processo de desfazer os dados, evitando a persistência parcial de dados inconsistentes. Essa consistência transacional é fundamental para o processo geral de \textit{ETL}, pois mantém a integridade dos dados inseridos no banco, assegurando que as transformações anteriores (extração e transformação) sejam refletidas corretamente no sistema de destino.
+
+\section{Testes}  
+
+Os testes foram realizados utilizando 3 grupos distintos de bases de dados \footnote{Testes e bases de dados: \url{https://zenodo.org/records/15758992}}, cada uma das bases é descrita a seguir:
+
+\begin{itemize}
+    \item \textbf{QuestionDB}: Conjunto de 30 questões com respostas para dúvidas de alunos do ensino fundamental. Todas as questões foram adicionadas em tabelas no formato de \textit{XLSX} e tabelas no formato de \textit{DOCX}. Esse é um banco de dados semelhante ao utilizado por Chiara Van Der Putten no seu trabalho de 2024 \cite{vanderputten2024}. É o \textit{dataset} mais simples em questão de processamento, contendo 261 KB em arquivos de formato tabular simples;
+    \item \textbf{SoccerDB}: Conjunto de documentos no formato de \textit{PDFs} contendo dados sobre o campeonato brasileiro de futebol entre 2014 e 2020. Os documentos foram extraídos da \textit{wikipédia} pública, contendo entre duas a três páginas de conteúdo. Foi inserido um campo chamado de competição, que deve ser inferido dos metadados de sumarização como forma de teste de abrangência para os modelos. Este \textit{dataset} contém 1,80 MB dividido em arquivos \textit{PDFs} complexos, com um processamento moderado de informações textuais sobre o campeonato brasileiro em análise;
+    \item \textbf{SpotifyDB}:  Conjunto de dados obtido através de consulta aos dados públicos do aplicativo \textit{Spotify}. Playlists públicas salvas em arquivos de texto contendo músicas, cada lista contém músicas de diferentes gêneros em formato de texto plano. Ao todo o conjunto possuí 1500 músicas, um total de 2,74 MB ao todo em arquivos \textit{TXT} e um arquivo resultante esperado de 16.654 linhas de resposta em \textit{JSON}. Envolve processamento massivo de \textit{chunks} por ter um volume considerável de dados em cada arquivo e informações específicas como nomes de autores e músicas salvos em diferentes alfabetos e estruturas.
+\end{itemize}
+Os seguintes modelos foram selecionados para testar a abordagem de \textit{ETL}:
+\begin{itemize}
+    \item \texttt{dolphin-2.9} – Modelo gratuito baseado no \texttt{LLaMA};
+    \item \texttt{qwen-2.5-max} – Modelo gratuito treinado pela \texttt{Alibaba};
+    \item \texttt{gpt-4o} – Modelo pago treinado pela \texttt{OpenAI};
+    \item \texttt{gemini-2.5-flash} – Modelo pago treinado pela \texttt{Google};
+    \item \texttt{mistral-small-3.1-24b} – Modelo gratuito treinado pela \texttt{Mistral}.
+\end{itemize}
+
+A escolha dos modelos acima busca balancear testes com \textit{LLM's} de acesso livre e modelos pagos e restritos. Para avaliar o desempenho da abordagem, um algoritmo contendo todo o processo de \textit{ETL} foi implementado na linguagem Java 17. Após isso, os experimentos foram conduzidos em um ambiente configurado com as seguintes especificações:
+
+\begin{itemize}
+    \item \textbf{Sistema Operacional:} Windows 11 Pro 24H2;
+    \item \textbf{Processador:} AMD Ryzen 7 5700X 8 núcleos e 16 Threads;
+    \item \textbf{Memória RAM:} 32 GB DDR4;
+    \item \textbf{Placa de vídeo:} RTX 4060TI;
+    \item \textbf{Memória Secundária:} SSD Kingston KC3000 1TB.
+\end{itemize}
+
+\section{Resultados}
+
+Para todos os modelos generativos, os testes foram realizados com temperatura de resposta igual a 0,2 e tamanho total de resposta de 12.000 \textit{tokens}, essa definição unitária ajudou a validar os resultados com os mesmos parâmetros. Cada modelo foi submetido a uma sessão individual de processamento, na qual três documentos eram processados em paralelo, cada um subdividido em janelas de 16 \textit{chunks}, também executadas em paralelo.
+
+\subsection{QuestionsDB}
+
+No \textit{dataset} \textbf{QuestionsDB}, os modelos \textbf{qwen-2.5-max}, \textbf{dolphin-2.9} e \textbf{gpt-4o} atingiram as maiores métricas, com pontuação máxima de 1,0 em todas, evidenciando a qualidade da extração e conversão estruturada das entidades em cenários simples.
+
+\begin{figure}[htb]
+\centering	
+	\includegraphics[scale=0.5]{resources/models_questionsDB_results.png}
+\caption{Métricas dos modelos para o dataset QuestionDB}
+\label{fig:Fig4}
+\end{figure}
+
+Os modelos \textbf{gemini-2.5-flash} e \textbf{mistral-small-3.1-24b} apresentaram métricas com pequenas variações no desempenho, respectivamente com precisão de $0{,}963$ e $0{,}965$, recall de $0{,}995$ e $0{,}993$, F1-Score de $0{,}977$ e $0{,}974$, e similaridade estrutural de $0{,}96$ e $0{,}964$. Apesar de levemente inferiores, seus resultados permanecem acima de $0{,}96$, confirmando sua confiabilidade para esse cenário. O tempo de execução variou entre 26s (\textbf{mistral-small-3.1-24b}) e 56s (\textbf{dolphin-2.9}), sem impacto nos resultados das entidades.
+
+Para este conjunto de dados, a abordagem demonstrou-se eficiente para todos os modelos. Por se tratar de um \textit{dataset} relativamente simples e com uma estrutura tabular que favorece a extração, todos apresentaram bom desempenho com qualidade alta.
+
+\subsection{SoccerDB}
+
+No \textit{dataset} \textbf{SoccerDB}, que envolve extração de texto não estruturado em PDF, observou-se uma considerável variação de desempenho entre os modelos (Figura \ref{fig:Fig5}). O \textbf{gpt-4o} destacou-se como o mais eficaz, alcançando precisão de $0{,}944$, recall de $0{,}936$ e F1-Score de $0{,}940$. Em seguida, \textbf{qwen-2.5-max} obteve F1-Score de $0{,}892$ e \textbf{dolphin-2.9} registrou F1-Score de $0{,}851$, demonstrando desempenho robusto, embora inferior ao líder. O \textbf{gemini-2.5-flash} apresentou métricas intermediárias (precisão de $0{,}823$, recall de $0{,}769$, similaridade estrutural de $0{,}626$), indicando queda na similaridade estrutural, enquanto o \textbf{mistral-small-3.1-24b} obteve os índices mais baixos (F1-Score de $0{,}588$, precisão de $0{,}499$, similaridade estrutural de $0{,}430$), evidenciando dificuldade na extração consistente e na ordenação dos campos.
+
+\begin{figure}[htb]
+\centering	
+	\includegraphics[scale=0.5]{resources/models_soccerDB_results.png}
+\caption{Métricas dos modelos para o dataset SoccerDB}
+\label{fig:Fig5}
+\end{figure}
+
+Em termos de tempo de execução, o \textbf{gpt-4o} combinou as melhores métricas com o menor tempo de resposta (1:25). Embora o \textbf{mistral-small-3.1-24b} tenha apresentado tempo semelhante (1:30), seu desempenho foi significativamente inferior. Modelos mais lentos, como \textbf{dolphin-2.9} (3:25) e \textbf{qwen-2.5-max} (3:02), não superaram o \textbf{gpt-4o}, indicando que maior tempo de execução não se traduz necessariamente em melhores resultados em tarefas \textit{ETL} complexas.
+
+A sumarização dos documentos inserida como metadado de contexto permitiu tratar de forma mais eficaz a inferência de campos críticos, como a coluna \texttt{competição}, reduzindo o efeito de desconhecimento e melhorando a extração de informações estruturadas em modelos com  grande capacidade de inferência de informação.
+
+\subsection{SpotifyDB}
+
+O \textit{dataset} final \textbf{SpotifyDB}, com alto volume de dados por arquivo, desafiou os modelos a manterem consistência em múltiplos \textit{chunks}. A Figura \ref{fig:Fig6} mostra que os modelos \textbf{gpt-4o} e \textbf{qwen-2.5-max} apresentaram um desempenho comparável entre ambos, com F1-Scores de $0{,}990$ e $0{,}988$, respectivamente, além de altas similaridades estruturais ($0{,}981$ e $0{,}979$). O tempo de execução difere muito entre os dois modelos, (2:17) e (4:32), indicando que o tempo de execução e as altas qualidades de resposta não estão correlacionados.
+
+\begin{figure}[htb]
+\centering	
+	\includegraphics[scale=0.5]{resources/models_spotifyDB_results.png}
+\caption{Métricas dos modelos para o dataset SpotifyDB}
+\label{fig:Fig6}
+\end{figure}
+
+O modelo \textbf{dolphin-2.9} também obteve métricas altas (F1-Score de $0{,}955$ e similaridade de $0{,}917$), mostrando-se eficaz mesmo com o maior tempo de execução (4:46 min). O \textbf{gemini-2.5-flash}, apesar de um bom F1-Score ($0{,}904$), demonstrou menor consistência na estrutura ($0{,}847$), refletindo dificuldades com a coerência dos dados em larga escala. O \textbf{mistral-small-3.1-24b} teve a menor performance geral, com F1-Score de $0{,}717$ e similaridade estrutural de apenas $0{,}646$, indicando limitações na manipulação de dados extensos e paralelos.
+
+A segmentação desse \textit{dataset} em pequenos pedaços de texto testou ao máximo o processamento paralelo para todos os modelos e foi possível notar que modelos com maior capacidade contextual lidam melhor com mais \textit{chunks} de uma vez, garantindo métricas e resultados melhores para o maior \textit{dataset} utilizado para validar o desempenho.
+
+\subsection{Análise Geral dos Resultados}
+
+Os resultados globais na figura \ref{fig:Fig7} indicam uma correlação direta entre a capacidade contextual dos modelos e seu desempenho em extrações de complexidade variada. É fundamental observar que todos os modelos processaram as entidades sem incorrer em erros bloqueantes, como \emph{Missing Mandatory Fields} ou \emph{Data Type Errors}, e sem falhas em validações semânticas de alucinação.
+
+\begin{figure}[htb]
+  \centering
+  \includegraphics[scale=0.45]{resources/models_general_results.png}
+  \caption{Comparação das métricas finais entre todos os modelos}
+  \label{fig:Fig7}
+\end{figure}
+
+Para verificar a existência de diferenças estatisticamente significativas entre os modelos nas métricas de precisão, recall, F1-Score e Jaccard, aplicou-se o teste de Friedman \cite{friedman1937use}, seguido do procedimento post-hoc de Nemenyi \cite{nemenyi1963distributionfree}. Em todos os casos, o teste de Friedman indicou valor de \(p<0,01\), comprovando que nem todos os modelos apresentam desempenho equivalente. Os modelos ocuparam, respectivamente, as primeiras colocações de acordo com o ranking médio: \textbf{gpt-4o}, \textbf{qwen-2.5-max}, \textbf{dolphin-2.9}, \textbf{gemini-2.5-flash} e \textbf{mistral-small-3.1-24b}.
+
+Além disso, o post-hoc de Nemenyi demonstrou que \textbf{gpt-4o} superou de maneira significativa \textbf{qwen-2.5-max} nas métricas F1-Score (\(p=0,02\)) e Jaccard (\(p=0,01\)), não sendo observadas diferenças significativas em precisão e recall. \textbf{Dolphin-2.9} destacou-se em terceiro lugar, apresentando desempenho estatisticamente diferenciado em relação aos dois primeiros (\(p<0,05\)), mas mantendo-se à frente dos demais modelos, os quais revelaram queda acentuada em recall, sugerindo maior propensão à omissão de dados. Este procedimento estatístico reforça que, embora vários modelos atinjam médias acima de 95\%, apenas \textbf{gpt-4o} e \textbf{qwen-2.5-max} mantêm desempenho consistentemente superior, justificando sua adoção em cenários de extração crítica de entidades.
+
+\section{Conclusão}
+
+Neste trabalho, avaliou-se uma abordagem automatizada de \textit{ETL} para a migração de dados não estruturados para bancos de dados relacionais, utilizando cinco modelos de linguagem de larga escala (\textit{LLMs}). A análise dos resultados, validada estatisticamente, demonstrou que a escolha do modelo é um fator crítico para o sucesso da migração. O teste de Friedman confirmou que existem diferenças de desempenho estatisticamente significativas entre os modelos avaliados ($p<0,01$), com o \textit{ranking} médio posicionando \textbf{gpt-4o}, \textbf{qwen-2.5-max} e \textbf{dolphin-2.9} nas primeiras colocações. O teste \textit{post-hoc} de Nemenyi reforçou a superioridade do \textbf{gpt-4o}, que não só apresentou o menor tempo de execução , mas também superou significativamente o segundo colocado, \textbf{qwen-2.5-max}, em métricas-chave de desempenho estrutural como F1-Score e Jaccard Similarity.
+
+A análise expõe uma importante troca entre o custo e o desempenho. Embora o modelo proprietário \textbf{gpt-4o} seja estatisticamente superior, modelos de acesso livre como o \textbf{qwen-2.5-max} e o \textbf{dolphin-2.9} surgem como alternativas altamente competitivas, entregando resultados robustos e com alta fidelidade em cenários complexos. Por outro lado, os modelos \textbf{gemini-2.5-flash} e \textbf{mistral-small-3.1-24b} apresentaram um desempenho estatisticamente inferior, com uma queda acentuada no \textit{recall}, indicando maior propensão à omissão de dados e tornando-os menos adequados para ambientes de produção com requisitos de alta precisão.
+
+Um ponto fundamental é que nenhum dos modelos incorreu em erros bloqueantes (como \textit{Missing Mandatory Fields} ou \textit{Data Type Errors}) ou falhou nas validações de alucinação, o que reforça a integridade estrutural e a confiabilidade do processo. Isso abre portas para a implementação em \textit{pipelines} de dados reais para automatizar tarefas como a digitalização e extração de conteúdo de documentos, a ingestão de informações via \textit{web scraping} e a transformação de dados legados em entidades.
+
+Como trabalhos futuros, destaca-se a possibilidade de testar novas estratégias de adaptação de \textit{prompts} para otimizar o desempenho de cada modelo individualmente. Além disso, a integração com metadados adicionais e validação semântica contínua pode melhorar a confiabilidade e o tempo de processamento. Outra linha promissora é a exploração de arquiteturas especializadas para diminuir o custo monetário de modelos pagos, sem comprometer a precisão.
+
+Em suma, a metodologia proposta é promissora e escalável, contanto que a escolha do \textit{LLM} seja alinhada às especificações do \textit{dataset}. Para modelos com alta capacidade contextual, a abordagem se mostrou eficaz para automatizar a extração a partir de fontes diversas, reduzindo o esforço manual e garantindo a integridade dos dados, reforçando seu potencial para converter dados não estruturados em entidades estruturadas para bancos de dados relacionais.
+
+\bibliographystyle{sbc}
+\bibliography{sbc-template}
+
+
+\end{document}
